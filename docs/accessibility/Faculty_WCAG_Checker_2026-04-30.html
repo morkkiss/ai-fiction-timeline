@@ -1,40 +1,1989 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Faculty WCAG Checker</title>
-    <link rel="stylesheet" href="vendor/tailwind.min.css">
-    <script src="vendor/react.production.min.js"></script>
-    <script src="vendor/react-dom.production.min.js"></script>
-    <style>
-      body { min-height: 100vh; }
-    </style>
-  <script>
-// Hide the standalone-page chrome (top nav strip, etc.) when this page is rendered inside an iframe.
-// The MkDocs site already provides toolkit navigation; we don't want to duplicate it.
-(function() {
-  try {
-    if (window !== window.top) {
-      document.documentElement.classList.add('in-iframe');
-    }
-  } catch (e) { /* cross-origin SecurityError on window.top — ignore */ }
-})();
-</script>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Faculty WCAG Checker</title>
 <style>
-.in-iframe nav[aria-label="Toolkit navigation"],
-.in-iframe header > div > div.text-xs.text-slate-600.text-right { display: none !important; }
+:root {
+  --primary: #1f4e79;
+  --critical: #7b1e1e;
+  --warning: #7a6000;
+  --pass: #1e6b3c;
+  --info: #0c4a6e;
+  --bg: #ffffff;
+  --bg-soft: #f8fafc;
+  --bg-panel: #f1f5f9;
+  --text: #0f172a;
+  --muted: #475569;
+  --border: #cbd5e1;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+}
+.skip-link { position: absolute; left: -9999px; top: -9999px; }
+.skip-link:focus { left: 1rem; top: 1rem; z-index: 100; background: white; padding: 0.5rem 1rem; border: 2px solid var(--primary); }
+header.topbar {
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 1.5rem;
+  background: var(--bg);
+}
+header.topbar h1 {
+  font-size: 1.25rem;
+  margin: 0;
+  color: var(--text);
+  font-weight: 600;
+}
+header.topbar .meta { font-size: 0.85rem; color: var(--muted); margin-top: 0.15rem; }
+nav.toolkit-nav {
+  border-bottom: 1px solid var(--border);
+  padding: 0.5rem 1.5rem;
+  background: var(--bg-soft);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+nav.toolkit-nav a {
+  display: inline-block;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--primary);
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+nav.toolkit-nav a:hover, nav.toolkit-nav a:focus { background: var(--bg-soft); }
+.in-iframe nav.toolkit-nav, .in-iframe header.topbar { display: none; }
+main { max-width: 1100px; margin: 0 auto; padding: 1rem 1.5rem 3rem; }
+.notice {
+  background: var(--bg-soft);
+  border-left: 4px solid var(--primary);
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.notice strong { color: var(--text); }
+details.where-html {
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  margin: 1rem 0;
+}
+details.where-html summary { font-weight: 600; cursor: pointer; color: var(--primary); }
+details.where-html ul { margin: 0.5rem 0 0; padding-left: 1.5rem; }
+details.where-html li { margin: 0.25rem 0; }
+.audit-form {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+.audit-form label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  color: var(--text);
+}
+.audit-form textarea {
+  width: 100%;
+  min-height: 220px;
+  padding: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: ui-monospace, "SF Mono", Monaco, "Cascadia Mono", monospace;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  resize: vertical;
+}
+.audit-form textarea:focus { outline: 3px solid var(--primary); outline-offset: 1px; }
+.button-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; }
+button.btn {
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--text);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+button.btn:hover, button.btn:focus { background: var(--bg-soft); }
+button.btn.primary {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  font-weight: 600;
+}
+button.btn.primary:hover, button.btn.primary:focus { background: #163a5c; border-color: #163a5c; }
+.status {
+  margin: 1rem 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 4px;
+  background: var(--bg-soft);
+  border-left: 3px solid var(--primary);
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.status.error {
+  background: #fef2f2;
+  border-color: var(--critical);
+  color: var(--critical);
+}
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 2px solid var(--border);
+  margin-top: 1.5rem;
+}
+.tabs button {
+  padding: 0.6rem 1rem;
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: -2px;
+}
+.tabs button[aria-selected="true"] {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+.tab-panel { display: none; padding: 1rem 0; }
+.tab-panel.active { display: block; }
+.findings-controls { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; font-size: 0.9rem; }
+.findings-controls select, .findings-controls button {
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: white;
+  font-size: 0.85rem;
+}
+.summary-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.chip {
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+}
+.chip.critical { background: #fef2f2; color: var(--critical); border-color: #fecaca; }
+.chip.warning { background: #fefce8; color: var(--warning); border-color: #fde68a; }
+.chip.advisory { background: #ecfdf5; color: var(--pass); border-color: #a7f3d0; }
+.chip.pass { background: #ecfdf5; color: var(--pass); border-color: #a7f3d0; }
+.chip.info { background: #f0f9ff; color: var(--info); border-color: #bae6fd; }
+.finding {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+  background: white;
+  overflow: hidden;
+}
+.finding-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  cursor: pointer;
+  background: white;
+  border: 0;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+}
+.finding-header:hover, .finding-header:focus { background: var(--bg-soft); }
+.finding-header .label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+.finding-header .label.critical { background: var(--critical); color: white; }
+.finding-header .label.warning { background: var(--warning); color: white; }
+.finding-header .label.advisory { background: var(--pass); color: white; }
+.finding-header .label.pass { background: var(--pass); color: white; }
+.finding-header .label.info { background: var(--info); color: white; }
+.finding-header .title { flex: 1; font-weight: 500; line-height: 1.4; }
+.finding-header .criterion { font-size: 0.8rem; color: var(--muted); margin-top: 0.15rem; }
+.finding-header .toggle { color: var(--muted); margin-left: 0.5rem; font-size: 0.85rem; }
+.finding.open .toggle { transform: rotate(90deg); }
+.finding-body {
+  display: none;
+  padding: 0.7rem 0.9rem 0.9rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg-soft);
+  font-size: 0.9rem;
+}
+.finding.open .finding-body { display: block; }
+.finding-body h4 { margin: 0.5rem 0 0.25rem; font-size: 0.85rem; color: var(--text); font-weight: 600; }
+.finding-body p { margin: 0.25rem 0 0.5rem; color: var(--text); white-space: pre-wrap; }
+.finding-body code { background: white; padding: 0.1rem 0.3rem; border-radius: 3px; border: 1px solid var(--border); font-size: 0.85em; }
+.finding-body .where { font-size: 0.8rem; color: var(--muted); font-family: ui-monospace, monospace; word-break: break-all; }
+.code-output {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+dialog.modal {
+  border: 0;
+  border-radius: 8px;
+  padding: 0;
+  max-width: 600px;
+  width: calc(100% - 2rem);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+}
+dialog.modal::backdrop { background: rgba(15, 23, 42, 0.6); }
+dialog.modal .modal-body { padding: 1.5rem; }
+dialog.modal h2 { margin: 0 0 0.75rem; font-size: 1.1rem; color: var(--primary); }
+dialog.modal p { margin: 0.5rem 0; font-size: 0.9rem; color: var(--text); }
+dialog.modal .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; }
+@media (max-width: 700px) {
+  main { padding: 1rem; }
+  header.topbar { padding: 0.75rem 1rem; }
+}
 </style>
 </head>
-  <body class="bg-white text-slate-800">
-    <noscript>
-      <div style="padding: 20px; font-family: Arial, sans-serif;">
-        JavaScript is required to use the Faculty WCAG Checker.
-      </div>
-    </noscript>
+<body>
+<a href="#main" class="skip-link">Skip to main content</a>
 
-    <div id="tls-wcag-checker-root"></div>
+<header class="topbar">
+  <h1>Faculty WCAG Checker</h1>
+  <div class="meta">Prepared by Morgan Talty, Department of English, University of Maine</div>
+</header>
 
-    <script src="checker.bundle.js"></script>
-  </body>
+<nav class="toolkit-nav" aria-label="Toolkit navigation">
+  <a href="./">← Toolkit Start</a>
+  <a href="section-2-the-three-things-that-matter-most/">Field Guide</a>
+  <a href="Faculty_Examples_2026-04-30.html">Examples</a>
+  <a href="Faculty_WCAG_Routing_Guide_2026-04-30.html">Routing Guide</a>
+</nav>
+
+<main id="main">
+  <p class="notice">
+    <strong>What this is:</strong> a fast accessibility check for an HTML version of a course page. Paste your content below, run an audit, and read the plain-language findings. Nothing leaves your browser — the audit runs locally on your machine.
+  </p>
+
+  <details class="where-html">
+    <summary>Where do I get HTML to paste here?</summary>
+    <ul>
+      <li><strong>Brightspace page:</strong> open the page editor → click the source-view button (often labeled <code>&lt;/&gt;</code> or "View Source") → copy everything.</li>
+      <li><strong>Word document:</strong> File → Save As → "Web Page" → open the resulting <code>.html</code> file in TextEdit → copy.</li>
+      <li><strong>Google Doc:</strong> File → Download → Web Page (HTML, zipped) → unzip, open the <code>.html</code> file in TextEdit → copy.</li>
+      <li><strong>Course website:</strong> in your browser, right-click the page → View Page Source → copy.</li>
+    </ul>
+    <p style="font-size:0.85rem;color:var(--muted);margin-top:0.5rem">If "HTML" is unfamiliar, use the <a href="section-2-the-three-things-that-matter-most/">Field Guide</a> instead — it walks through Word, Google Docs, and PowerPoint in plain language.</p>
+  </details>
+
+  <div class="audit-form">
+    <label for="html-input">Paste your course page HTML here:</label>
+    <textarea id="html-input" aria-describedby="html-input-help" placeholder="<html><body>...</body></html>"></textarea>
+    <div id="html-input-help" style="font-size:0.85rem;color:var(--muted);margin-top:0.3rem">
+      Or click "Load sample" to see what an audit looks like.
+    </div>
+    <div class="button-row">
+      <button class="btn primary" id="audit-btn" type="button">Audit + Fix</button>
+      <button class="btn" id="load-sample" type="button">Load sample →</button>
+      <button class="btn" id="download-report" type="button">Download report</button>
+    </div>
+  </div>
+
+  <div id="status" class="status" role="status" aria-live="polite" style="display:none"></div>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" data-tab="audit" aria-selected="true">Findings</button>
+    <button role="tab" data-tab="fixed" aria-selected="false">Auto-Fixed HTML</button>
+    <button role="tab" data-tab="fixes" aria-selected="false">What was fixed</button>
+  </div>
+
+  <div class="tab-panel active" data-tab="audit">
+    <div class="findings-controls">
+      <label for="severity-filter" style="margin-right:0.3rem">Filter by severity:</label>
+      <select id="severity-filter">
+        <option value="all">All</option>
+        <option value="critical">Critical only</option>
+        <option value="warning">Warning only</option>
+        <option value="advisory">Advisory only</option>
+        <option value="pass">Pass only</option>
+      </select>
+    </div>
+    <div id="summary-row" class="summary-row"></div>
+    <div id="findings-list"></div>
+  </div>
+
+  <div class="tab-panel" data-tab="fixed">
+    <p style="color:var(--muted);font-size:0.9rem">A copy of your HTML with safe, automated fixes applied (alt text added where filenames suggested, language attribute set, etc.). Review carefully before using — automated fixes are starting points, not finished work.</p>
+    <pre id="fixed-html" class="code-output">Run an audit first to see the fixed version.</pre>
+  </div>
+
+  <div class="tab-panel" data-tab="fixes">
+    <p style="color:var(--muted);font-size:0.9rem">List of every automatic fix applied:</p>
+    <ul id="fixes-list"></ul>
+  </div>
+</main>
+
+<dialog id="onboarding-modal" class="modal" aria-labelledby="modal-title">
+  <div class="modal-body">
+    <h2 id="modal-title">Welcome to the Faculty WCAG Checker</h2>
+    <p>This tool checks an HTML version of a course page for common accessibility problems and gives you plain-language fix instructions for Word, Google Docs, PowerPoint, PDFs, and Brightspace.</p>
+    <p>Nothing you paste leaves your browser. The check runs locally on your machine. The tool does not certify compliance and does not replace manual review.</p>
+    <p style="font-size:0.9rem;color:var(--muted)"><strong>If you do not have HTML to paste:</strong> use the <a href="section-2-the-three-things-that-matter-most/">Field Guide</a> instead — it walks through Word, Google Docs, PowerPoint, and PDFs in plain language without ever needing to touch HTML.</p>
+    <div class="modal-actions">
+      <button class="btn primary" id="modal-continue" type="button">Continue</button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+
+
+const APP_NAME = "Faculty WCAG Checker";
+const APP_BRAND = "Morgan Talty, Department of English, University of Maine";
+const TLS_VERSION = "1.1.0"; // bump to 2.0.0 only after all output paths confirmed updated
+const APP_VERSION = `v${TLS_VERSION}`;
+const REPORT_BRAND = "Faculty WCAG Audit Report — Prepared by Morgan Talty";
+const AI_ALT_ENDPOINT = (typeof window !== "undefined" && window.__TLS_VISION_ALT_API) || "";
+const PRIMARY_BLUE = "#1F4E79";
+const SEVERITY_CRITICAL = "#7B1E1E";
+const SEVERITY_WARNING = "#7A6000";
+const SEVERITY_PASS = "#1E6B3C";
+const CONTACT_EMAIL = "morgan.talty@maine.edu";
+const SHARE_TOOL_PATH = "./Faculty_WCAG_Checker_2026-04-30.html";
+const TLS_LICENSE_AGREEMENT_URL = ""; // legal pages removed for faculty distribution
+const TLS_PRIVACY_POLICY_URL = "";
+const TLS_ACCEPTABLE_USE_POLICY_URL = "";
+const IS_ELECTRON = Boolean(window?.electron?.ipcRenderer?.invoke);
+
+const VAGUE_LINK_TEXT = new Set(["click here","here","read more","more","link","this","download","learn more"]);
+const SOCIAL_PLATFORM_LABELS = {
+  facebook: "Facebook",
+  twitter: "Twitter / X",
+  instagram: "Instagram",
+  linkedin: "LinkedIn",
+  youtube: "YouTube",
+  tiktok: "TikTok",
+  x: "X (Twitter)",
+};
+
+const isTruthyText = (value) => (value || "").toString().trim().length > 0;
+
+const normalizeFilenameToLabel = (value) => (
+  (value || "").toString()
+    .replace(/\.[^.]+$/u, "")
+    .replace(/[-_]/gu, " ")
+    .replace(/\s+/gu, " ")
+    .trim()
+);
+
+const looksDecorativeImage = (src = "") => /logo|icon|bg|background|decoration|divider|spacer|pattern|pennant|placeholder/i.test(src);
+
+const hasSafeLang = (value = "") => /^[a-z]{2,3}(-[a-z]{2,4})?$/i.test(value.trim());
+
+const normalizeLinkText = (text = "") => (text || "")
+  .toLowerCase()
+  .replace(/[\u2010\u2011\u2012\u2013\u2212]/gu, "-")
+  .replace(/[^\w\s-]/gu, "")
+  .replace(/\s+/gu, " ")
+  .trim();
+
+const isPlaceholderHref = (href = "") => {
+  const value = (href || "").trim().toLowerCase();
+  return !value || value === "#" || value === "javascript:void(0)" || value === "javascript:;" || value === "javascript:void(0);";
+};
+
+const hasLabeledField = (doc, field) => {
+  if (isTruthyText(field.getAttribute("aria-label")) || isTruthyText(field.getAttribute("aria-labelledby"))) return true;
+  if (field.closest("label")) return true;
+  const id = (field.getAttribute("id") || "").trim();
+  if (!id) return false;
+  return !!doc.querySelector(`label[for="${id}"]`);
+};
+
+const controlAutoLabel = (field) => {
+  const placeholder = (field.getAttribute("placeholder") || "").trim();
+  const id = (field.getAttribute("id") || "").trim();
+  const type = (field.getAttribute("type") || "text").trim();
+  const tag = field.tagName.toLowerCase();
+  if (tag === "select") return "Select field";
+  if (tag === "textarea") return "Text area field";
+  if (isTruthyText(placeholder)) return placeholder;
+  if (isTruthyText(id)) return `${id.replace(/[-_]/g, " ").replace(/\s+/g, " ").trim()} field`;
+  return `${type.charAt(0).toUpperCase()}${type.slice(1)} field`;
+};
+
+const externalBlankNeedsRel = (a) => {
+  const target = (a.getAttribute("target") || "").toLowerCase().trim();
+  const rel = (a.getAttribute("rel") || "").toLowerCase();
+  if (target !== "_blank") return false;
+  return !(/\bnoopener\b/.test(rel) && /\bnoreferrer\b/.test(rel));
+};
+
+const ensureSafeRel = (existingRel = "") => {
+  const rel = new Set(
+    (existingRel || "")
+      .toLowerCase()
+      .split(/\s+/)
+      .map(v => v.trim())
+      .filter(Boolean),
+  );
+  rel.add("noopener");
+  rel.add("noreferrer");
+  return [...rel].join(" ");
+};
+
+const collectDuplicateIds = (doc) => {
+  const seen = new Set();
+  const duplicate = new Set();
+  doc.querySelectorAll("[id]").forEach((el) => {
+    const id = (el.getAttribute("id") || "").trim();
+    if (!id) return;
+    if (seen.has(id)) duplicate.add(id);
+    seen.add(id);
+  });
+  return [...duplicate];
+};
+
+let tlsAutoIdSeq = 0;
+const nextTlsId = (prefix = "tls") => `tls-${prefix}-${++tlsAutoIdSeq}`;
+
+const getElementPath = (el) => {
+  if (!el || !el.tagName) return null;
+  const parts = [];
+  let node = el;
+  while (node && node.nodeType === 1 && node.tagName.toLowerCase() !== "html") {
+    const tag = node.tagName.toLowerCase();
+    const id = (node.getAttribute("id") || "").trim();
+    const className = (node.getAttribute("class") || "").trim().split(/\s+/)[0];
+    const parent = node.parentElement;
+    let selector = tag;
+    if (isTruthyText(id)) selector += `#${id}`;
+    else if (className) selector += `.${className}`;
+    if (parent) {
+      const sameTagSiblings = Array.from(parent.children).filter((x) => x.tagName === node.tagName);
+      if (sameTagSiblings.length > 1) {
+        const index = sameTagSiblings.indexOf(node) + 1;
+        selector += `:nth-of-type(${index})`;
+      }
+    }
+    parts.unshift(selector);
+    node = parent;
+  }
+  return parts.slice(-4).join(" > ");
+};
+
+const hasCaptionsTrack = (mediaEl) => {
+  if (!mediaEl || !mediaEl.querySelectorAll) return false;
+  return Array.from(mediaEl.querySelectorAll("track")).some((track) => {
+    const kind = (track.getAttribute("kind") || "").toLowerCase();
+    return kind === "captions" || kind === "subtitles";
+  });
+};
+
+const NAMED_COLORS = {
+  black: "#000000",
+  silver: "#c0c0c0",
+  gray: "#808080",
+  white: "#ffffff",
+  maroon: "#800000",
+  red: "#ff0000",
+  purple: "#800080",
+  green: "#008000",
+  olive: "#808000",
+  yellow: "#ffff00",
+  lime: "#00ff00",
+  aqua: "#00ffff",
+  teal: "#008080",
+  blue: "#0000ff",
+  navy: "#000080",
+  fuchsia: "#ff00ff",
+  magenta: "#ff00ff",
+  cyan: "#00ffff",
+  darkred: "#8b0000",
+  brown: "#a52a2a",
+  firebrick: "#b22222",
+  crimson: "#dc143c",
+  indianred: "#cd5c5c",
+  lightcoral: "#f08080",
+  salmon: "#fa8072",
+  darkorange: "#ff8c00",
+  orange: "#ffa500",
+  gold: "#ffd700",
+  khaki: "#f0e68c",
+  oliveDrab: "#6b8e23",
+  yellowgreen: "#9acd32",
+  darkgreen: "#006400",
+  forestgreen: "#228b22",
+  greenyellow: "#adff2f",
+  seagreen: "#2e8b57",
+  teal: "#008080",
+  darkcyan: "#008b8b",
+  lightskyblue: "#87cefa",
+  skyblue: "#87ceeb",
+  royalblue: "#4169e1",
+  dodgerblue: "#1e90ff",
+  cornflowerblue: "#6495ed",
+  steelblue: "#4682b4",
+  lightblue: "#add8e6",
+  mediumblue: "#0000cd",
+  midnightblue: "#191970",
+  slategray: "#708090",
+  dimgray: "#696969",
+  gray: "#808080",
+  darkgray: "#a9a9a9",
+  silver: "#c0c0c0",
+  lightgray: "#d3d3d3",
+  gainsboro: "#dcdcdc",
+  lavender: "#e6e6fa",
+  plum: "#dda0dd",
+  violet: "#ee82ee",
+  orchid: "#da70d6",
+  purple: "#800080",
+  indigo: "#4b0082",
+  teal: "#008080",
+  wheat: "#f5deb3",
+  peru: "#cd853f",
+  chocolate: "#d2691e",
+  sienna: "#a0522d",
+  saddlebrown: "#8b4513",
+  rosybrown: "#bc8f8f",
+  maroon: "#800000",
+  hotpink: "#ff69b4",
+  pink: "#ffc0cb",
+  lightpink: "#ffb6c1",
+  darkslategray: "#2f4f4f",
+  slategrey: "#708090",
+  lightslategray: "#778899",
+  lightsteelblue: "#b0c4de",
+  mintcream: "#f5fffa",
+  aliceblue: "#f0f8ff",
+  honeydew: "#f0fff0",
+  azure: "#f0ffff",
+  ivory: "#fffff0",
+  seashell: "#fff5ee",
+  lavenderblush: "#fff0f5",
+  oldlace: "#fdf5e6",
+  linen: "#faf0e6",
+  beige: "#f5f5dc",
+  bisque: "#ffe4c4",
+  antiquewhite: "#faebd7",
+  navajowhite: "#ffdead",
+  moccasin: "#ffe4b5",
+  cornsilk: "#fff8dc",
+  blanchedalmond: "#ffebcd",
+  tan: "#d2b48c",
+  burlywood: "#deb887",
+  papayawhip: "#ffefd5",
+  seashell: "#fff5ee",
+  antiquewhite: "#faebd7",
+  transparent: "",
+};
+
+const parseColor = (value = "") => {
+  const normalized = (value || "").trim().toLowerCase();
+  if (!normalized || normalized === "transparent" || normalized === "currentcolor" || normalized === "inherit" || normalized === "initial" || normalized === "unset") return null;
+  if (normalized.startsWith("#")) return hexToRgba(normalized);
+  if (normalized.startsWith("rgb")) return parseRgbLike(normalized);
+  if (normalized.startsWith("hsl")) return parseHslLike(normalized);
+  const named = NAMED_COLORS[normalized];
+  if (!named) return null;
+  return hexToRgba(named);
+};
+
+const hexToRgba = (hex = "") => {
+  const raw = (hex || "").replace("#", "").trim();
+  if (!raw || !/^[\da-f]+$/i.test(raw)) return null;
+  const normalized = raw.length === 3 || raw.length === 4
+    ? raw.split("").map((char) => char + char).join("")
+    : raw;
+  if (![6, 8].includes(normalized.length)) return null;
+  const r = parseInt(normalized.slice(0, 2), 16);
+  const g = parseInt(normalized.slice(2, 4), 16);
+  const b = parseInt(normalized.slice(4, 6), 16);
+  const a = normalized.length === 8 ? parseInt(normalized.slice(6, 8), 16) / 255 : 1;
+  if ([r, g, b, a].some((v) => Number.isNaN(v))) return null;
+  return { r, g, b, a };
+};
+
+const parseAlpha = (token = "") => {
+  const value = (token || "").trim();
+  if (!value) return 1;
+  if (value.includes("%")) return clamp01(parseFloat(value) / 100);
+  const n = parseFloat(value);
+  if (Number.isNaN(n)) return 1;
+  return clamp01(n);
+};
+
+const clamp01 = (value) => Math.max(0, Math.min(1, value));
+
+const parseRgbLike = (value = "") => {
+  const match = value.match(/rgba?\((.*)\)/i);
+  if (!match) return null;
+  const args = match[1].replace(/\//g, " / ").split(/\s*,?\s+/).filter(Boolean);
+  if (args.length < 3) return null;
+  const slash = args.indexOf("/");
+  const rgbTokens = slash >= 0 ? args.slice(0, slash) : args.slice(0, 3);
+  if (rgbTokens.length < 3) return null;
+  const parsed = rgbTokens.map((token, idx) => {
+    const trimmed = token.trim();
+    const n = parseFloat(trimmed);
+    if (Number.isNaN(n)) return null;
+    if (trimmed.endsWith("%")) return clamp01(n / 100) * 255;
+    return idx < 3 ? clamp01(n / 255) * 255 : null;
+  });
+  if (parsed.includes(null)) return null;
+  const alpha = slash >= 0 ? parseAlpha(args[slash + 1]) : (rgbTokens[3] ? parseAlpha(rgbTokens[3]) : 1);
+  return {
+    r: Math.round(parsed[0]),
+    g: Math.round(parsed[1]),
+    b: Math.round(parsed[2]),
+    a: alpha,
+  };
+};
+
+const parseHslLike = (value = "") => {
+  const match = value.match(/hsla?\((.*)\)/i);
+  if (!match) return null;
+  const args = match[1].replace(/\//g, " / ").split(/\s*,?\s+/).filter(Boolean);
+  if (args.length < 3) return null;
+  const slash = args.indexOf("/");
+  const h = parseFloat(args[0]);
+  const s = parseFloat(args[1]);
+  const l = parseFloat(args[2]);
+  if (Number.isNaN(h) || Number.isNaN(s) || Number.isNaN(l)) return null;
+  const S = clamp01(s / 100);
+  const L = clamp01(l / 100);
+  const C = (1 - Math.abs(2 * L - 1)) * S;
+  const X = C * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = L - C / 2;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  const section = Math.floor((h % 360) / 60);
+  if (section === 0) { r = C; g = X; b = 0; }
+  else if (section === 1) { r = X; g = C; b = 0; }
+  else if (section === 2) { r = 0; g = C; b = X; }
+  else if (section === 3) { r = 0; g = X; b = C; }
+  else if (section === 4) { r = X; g = 0; b = C; }
+  else { r = C; g = 0; b = X; }
+  const alpha = slash >= 0 ? parseAlpha(args[slash + 1]) : (args[3] ? parseAlpha(args[3]) : 1);
+  return {
+    r: Math.round((r + m) * 255),
+    g: Math.round((g + m) * 255),
+    b: Math.round((b + m) * 255),
+    a: alpha,
+  };
+};
+
+const extractColorFromShorthandBackground = (value = "") => {
+  const normalized = (value || "").toLowerCase();
+  if (!normalized) return null;
+  if (normalized.includes("linear-gradient") || normalized.includes("radial-gradient") || normalized.includes("url(") || normalized.includes("none")) return null;
+  const tokens = normalized.match(/(#[0-9a-f]{3,8}\b|rgba?\([^)]*\)|hsla?\([^)]*\)|[a-z]+)/g);
+  if (!tokens) return null;
+  for (const token of tokens) {
+    const parsed = parseColor(token);
+    if (parsed) return parsed;
+  }
+  return null;
+};
+
+const getInlineColor = (el, prop) => {
+  if (!el || !el.style) return null;
+  const raw = (el.style.getPropertyValue(prop) || "").trim();
+  if (!raw) return null;
+  if (prop === "background") return extractColorFromShorthandBackground(raw);
+  return parseColor(raw);
+};
+
+const resolveInlineColor = (el, resolver) => {
+  let node = el;
+  while (node && node.nodeType === 1) {
+    const color = resolver(node);
+    if (color) return color;
+    node = node.parentElement;
+  }
+  return null;
+};
+
+const getInlineTextColor = (el) => resolveInlineColor(el, (node) => getInlineColor(node, "color"));
+const getInlineBgColor = (el) => resolveInlineColor(el, (node) => getInlineColor(node, "background-color") || getInlineColor(node, "background"));
+
+const luminanceChannel = (value) => {
+  const fraction = clamp01(value / 255);
+  return fraction <= 0.03928 ? fraction / 12.92 : Math.pow((fraction + 0.055) / 1.055, 2.4);
+};
+
+const contrastRatio = (fg, bg) => {
+  if (!fg || !bg || fg.a === 0 || bg.a === 0) return null;
+  const l1 = 0.2126 * luminanceChannel(fg.r) + 0.7152 * luminanceChannel(fg.g) + 0.0722 * luminanceChannel(fg.b);
+  const l2 = 0.2126 * luminanceChannel(bg.r) + 0.7152 * luminanceChannel(bg.g) + 0.0722 * luminanceChannel(bg.b);
+  const bright = Math.max(l1, l2);
+  const dark = Math.min(l1, l2);
+  return (bright + 0.05) / (dark + 0.05);
+};
+
+const evaluateContrastPair = (foreground, background) => {
+  const fg = parseColor(foreground);
+  const bg = parseColor(background);
+  if (!fg || !bg) return null;
+  const ratio = contrastRatio(fg, bg);
+  if (!ratio) return null;
+  const ratioValue = Number(ratio.toFixed(2));
+  return {
+    foreground,
+    background,
+    ratio: ratioValue,
+    normal: ratioValue >= 4.5,
+    large: ratioValue >= 3,
+    ui: ratioValue >= 3,
+  };
+};
+
+const normalizeSeverity = (level = "", provided = "", category = null) => {
+  if (category === "quality") return "advisory";
+  const normalizedLevel = `${level || ""}`.toUpperCase().trim();
+  if (normalizedLevel === "AA") return "warning";
+  if (normalizedLevel === "A") return "critical";
+  const next = `${provided || ""}`.toLowerCase();
+  if (next === "advisory") return "advisory";
+  if (next === "critical" || next === "warning") return next;
+  return "advisory";
+};
+
+const hasOwnVisibleText = (el) => Array.from(el.childNodes).some((child) => child.nodeType === 3 && child.textContent.trim().length > 0);
+const hasStyleDisplayNone = (el) => el.style && (el.style.getPropertyValue("display") || "").trim().toLowerCase() === "none";
+
+const isUsefulImageLabel = (value = "") => {
+  const label = normalizeFilenameToLabel(value);
+  if (!label) return false;
+  const cleaned = label.toLowerCase().replace(/[^a-z0-9]+/gu, " ").trim();
+  if (!cleaned) return false;
+  return cleaned.length >= 3 && !/^(image|img|photo|picture|screenshot|icon|logo|graphic|banner|background|spacer)$/.test(cleaned);
+};
+
+const fetchVisionAltText = async (imageUrl) => {
+  if (!AI_ALT_ENDPOINT) return null;
+  try {
+    const response = await fetch(AI_ALT_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ imageUrl }),
+    });
+    if (!response.ok) return null;
+    const payload = await response.json();
+    const altText = (payload.altText || payload?.data?.altText || payload?.description || "").toString().trim();
+    return altText || null;
+  } catch {
+    return null;
+  }
+};
+
+const makeComplianceStatementDate = () => {
+  const now = new Date();
+  return now.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+};
+
+const downloadTextFile = (content = "", filename = "wcag-report.html") => {
+  const blob = new Blob([content], { type: "text/html;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+};
+
+const getInlineFontSizePx = (el) => {
+  let node = el;
+  while (node && node.nodeType === 1) {
+    const raw = (node.style && (node.style.getPropertyValue("font-size") || "")).trim();
+    if (raw.endsWith("px")) return parseFloat(raw);
+    if (raw.endsWith("pt")) return parseFloat(raw) * 1.333;
+    node = node.parentElement;
+  }
+  return null;
+};
+
+const isLargeText = (el) => {
+  let node = el;
+  let fontSize = null;
+  let isBold = false;
+  while (node && node.nodeType === 1) {
+    const style = node.style || {};
+    const rawWeight = (style.getPropertyValue("font-weight") || "").trim().toLowerCase();
+    if (rawWeight === "bold" || rawWeight === "bolder") isBold = true;
+    else if (!Number.isNaN(parseInt(rawWeight, 10))) isBold = parseInt(rawWeight, 10) >= 700;
+    const rawSize = (style.getPropertyValue("font-size") || "").trim();
+    if (!fontSize && rawSize) {
+      if (rawSize.endsWith("px")) fontSize = parseFloat(rawSize);
+      if (rawSize.endsWith("pt")) fontSize = parseFloat(rawSize) * 1.333;
+    }
+    node = node.parentElement;
+  }
+  const sizePx = fontSize || getInlineFontSizePx(el) || 16;
+  return isBold ? sizePx >= 18.667 : sizePx >= 24;
+};
+
+const hasInlineEvent = (el, names) => names.some((name) => el && el.hasAttribute && el.hasAttribute(name));
+const hasClickHandler = (el) => hasInlineEvent(el, ["onclick", "onmousedown", "onmouseup", "onpointerdown", "onpointerup", "ontouchstart", "ontouchend"]);
+const hasKeyboardEvent = (el) => hasInlineEvent(el, ["onkeydown", "onkeyup", "onkeypress"]);
+
+const naturallyKeyboardFocusable = (el) => {
+  const tag = el.tagName.toLowerCase();
+  if (tag === "a") {
+    return isTruthyText(el.getAttribute("href")) && !isPlaceholderHref(el.getAttribute("href"));
+  }
+  return ["button", "input", "select", "textarea", "summary", "option", "label"].includes(tag);
+};
+
+const keyboardAccessibilityIssue = (el) => {
+  if (!el || !el.tagName) return null;
+  const role = (el.getAttribute("role") || "").toLowerCase();
+  if (!hasClickHandler(el) && !["button", "link"].includes(role)) return null;
+  if (naturallyKeyboardFocusable(el)) return null;
+  if (!role && hasClickHandler(el)) {
+    return `Clickable ${el.tagName.toLowerCase()} is missing a semantic role (button/link) for keyboard users`;
+  }
+  const tabindexValue = (el.getAttribute("tabindex") || "").trim();
+  const tabindex = parseInt(tabindexValue, 10);
+  if (!Number.isNaN(tabindex) && tabindex < 0) return `Negative tabindex (${tabindex}) removes this clickable control from keyboard order`;
+  if (Number.isNaN(tabindex) && role) return `Missing tabindex on clickable ${role} element`;
+  if ((role === "link" || role === "button") && tabindexValue === "") return `Missing tabindex on clickable ${role} element`;
+  if (!hasKeyboardEvent(el)) return `No keyboard activation handler (Enter/Space) on clickable ${role || "interactive"} element`;
+  return null;
+};
+
+const buildFacultyGuidance = (criterion, issue = "", fix = "", element = null) => {
+  // Plain-language guidance for non-technical faculty.
+  // Each finding returns { why, how, example, where } where:
+  //   why  = what the user impact is (a real student affected)
+  //   how  = step-by-step instructions in Word / Google Docs / PowerPoint / PDF / etc.
+  //   example = plain-language good vs bad pair (not HTML)
+  //   where = path of the element (auto-filled)
+  const where = getElementPath(element) || "this content";
+  const normalized = issue.toLowerCase();
+  const fallback = {
+    why: "This may block students who use a screen reader or who can only navigate by keyboard.",
+    how: "Open the original document (Word, Google Doc, PowerPoint, etc.) and fix it there, then re-export. If you're seeing this on an HTML export, the issue is in the source file.",
+    example: null,
+    where,
+  };
+
+  // 1.1.1 — Images need a text description
+  if (criterion === "1.1.1") {
+    if (normalized.includes("missing alt")) {
+      return {
+        ...fallback,
+        why: "An image here has no text description. A blind student using a screen reader will hear nothing where this image is — they won't know it exists or what it shows.",
+        how: "In the source document:\n• Word or PowerPoint: right-click the image → Edit Alt Text → write a one-sentence description.\n• Google Docs or Slides: right-click the image → Alt text (or Cmd+Option+Y on Mac).\n• PDF: open in Adobe Acrobat Pro or UPDF → Tags panel → add an /Alt entry.\nIf the image is purely decorative (a divider, a border, a logo that adds no information), mark it as decorative so the screen reader skips it.",
+        example: "Good description: \"Bar chart showing course enrollment dropping fifteen percent from 2020 to 2025.\" — Bad description: \"chart\" or \"image\" or \"IMG_4521.jpg\".",
+      };
+    }
+    if (normalized.includes("filename")) {
+      return {
+        ...fallback,
+        why: "The text description here is just the file's name (something like \"IMG_4521.jpg\" or \"hero-banner.png\"). A student hearing that read aloud learns nothing about what the image shows.",
+        how: "Replace the filename with a real one-sentence description of what the image shows or means in your course context. Use the same right-click → Edit Alt Text path as above.",
+        example: "Replace \"hero-banner.png\" with \"Students sharing feedback at a wooden workshop table.\"",
+      };
+    }
+  }
+
+  // 1.2.2 — Captions and embedded media
+  if (criterion === "1.2.2") {
+    if (normalized.includes("iframe missing title")) {
+      return {
+        ...fallback,
+        why: "An embedded video or other media has no description of what it is. Students using screen readers hear only \"frame\" — no clue what's inside before they decide whether to play it.",
+        how: "If you embedded this through Brightspace or a course site editor, find the embed and add a title or description in the embed's settings. If you copied an embed code from YouTube or Kaltura, add a short title to the embed before pasting it back.",
+        example: "Title the embed something like \"Peer review rubric walkthrough — eight minutes.\"",
+      };
+    }
+    return {
+      ...fallback,
+      why: "A video on this page may not have captions. Students who are deaf or hard of hearing — and any student watching in a quiet space without headphones — cannot access the spoken content.",
+      how: "For YouTube videos you uploaded: open the video in YouTube Studio → Subtitles → review and edit auto-generated captions; auto-captions alone do NOT meet the legal standard.\nFor Kaltura videos in Brightspace: open the video → Actions → Captions → Edit Captions.\nFor Zoom recordings: enable cloud recording with audio transcript, then edit the transcript before sharing.\nFor your own videos: MacWhisper (Mac) generates accurate caption files locally that you upload to wherever the video lives.",
+      example: "Auto-captions miss accents, technical vocabulary, and background noise. Always review and correct before declaring a video accessible.",
+    };
+  }
+
+  // 1.3.1 — Document structure (headings, tables, skip link)
+  if (criterion === "1.3.1") {
+    if (normalized.includes("skip")) {
+      return {
+        ...fallback,
+        why: "Students who navigate by keyboard (no mouse) currently have to tab through every menu item before reaching your actual content. A \"skip to main content\" link lets them jump straight to the page body.",
+        how: "This is usually controlled by your course site theme or LMS template. If you have a custom course site, ask your web help desk to add a skip link. If you're using Brightspace's standard course pages, this is the platform's responsibility — not yours.",
+        example: null,
+      };
+    }
+    if (normalized.includes("no h1") || normalized.includes("heading skip")) {
+      return {
+        ...fallback,
+        why: "Heading levels are out of order, or there's no main heading at the top of the page. Screen readers use headings to skim a document the way you do visually — without proper structure, your student hears one undifferentiated wall of text.",
+        how: "In Word: select your title → click Heading 1 in the Styles panel. Section titles → Heading 2. Subsections → Heading 3. Don't skip levels (no jumping from Heading 1 to Heading 3).\nIn Google Docs: select text → Format → Paragraph styles → Heading 1, 2, 3.\nIn Brightspace HTML editor: select text → use the Format dropdown → Heading 1/2/3.\nDo NOT just make text big and bold — that looks like a heading but is invisible to a screen reader.",
+        example: "Use Heading 1 for the page or document title. Heading 2 for major sections (Week 1, Week 2). Heading 3 for items inside those sections (Reading, Assignment).",
+      };
+    }
+    if (normalized.includes("data table")) {
+      return {
+        ...fallback,
+        why: "A table here has no header row marked. Screen reader users hear cell after cell with no way to know which column or row label applies — like reading a spreadsheet column by column with no idea what each number means.",
+        how: "In Word: click anywhere in the table → Table Design tab → check \"Header Row.\" Then Table Properties → Row → check \"Repeat as header row at the top of each page.\"\nIn Google Docs: tables don't have a true header row feature — consider whether the data really needs a table; if it does, replicate the header text in the first row and rely on the structure being clear from context.\nIn Brightspace HTML editor: use the table tool's properties → set the first row as a header.",
+        example: "A header row labels the columns. Without it, a screen reader reads \"42, 38, 45\" with no idea those are enrollment numbers.",
+      };
+    }
+  }
+
+  // 2.4.1 — Bypass blocks (skip link, main landmark)
+  if (criterion === "2.4.1") {
+    return {
+      ...fallback,
+      why: "Keyboard-only users (and many screen reader users) need a reliable way to jump straight to your content without tabbing through every navigation menu first.",
+      how: "This is normally handled by your course site theme or LMS template, not by you as a content author. If you maintain a custom course website, ask the developer to add a \"Skip to main content\" link as the first focusable element.",
+      example: null,
+    };
+  }
+
+  // 2.4.2 — Page title
+  if (criterion === "2.4.2") {
+    return {
+      ...fallback,
+      why: "Each page or document needs a title that tells the student where they are. The title shows up in browser tabs and in screen reader announcements when the page loads.",
+      how: "In Word: File → Info → Properties → Title. Or File → Save As → expand Tools → Document Properties.\nIn Google Docs: File → Document details → Title (or just rename the document — Google uses the document name as the title).\nIn PowerPoint: File → Info → Properties → Title.\nIn a PDF: File → Properties → Description → Title.\nIn Brightspace pages: the page name IS the title; just make sure it's descriptive, not \"Untitled.\"",
+      example: "Use \"ENG 307 — Week 3 — Assignment Instructions\" rather than \"Untitled\" or just \"Document.\"",
+    };
+  }
+
+  // 2.4.3 — Focus order
+  if (criterion === "2.4.3") {
+    return {
+      ...fallback,
+      why: "Keyboard users tab through the page in a specific order. A custom focus order here may jump them around unpredictably — confusing for everyone, disorienting for screen reader users.",
+      how: "This is almost always a developer-side issue, not a content-author issue. If you see this on a Word or Google Docs export, you can ignore it — the export tool added it. If it's on a custom course website, ask your web help desk to remove the custom tabindex values.",
+      example: null,
+    };
+  }
+
+  // 1.4.3 — Color contrast
+  if (criterion === "1.4.3") {
+    return {
+      ...fallback,
+      why: "Text here doesn't have enough contrast against its background — students with low vision, or anyone reading on a low-quality monitor or in bright sunlight, may not be able to read it.",
+      how: "Avoid light gray text on white backgrounds, or yellow text on pale backgrounds. Use dark text (near-black) on light backgrounds, or light text on dark backgrounds. If you're unsure, the WebAIM Contrast Checker (free, online) accepts two colors and tells you whether they pass.\nIn PowerPoint and Word: stick with the default text color on the default background unless you have a strong reason to change it.\nIn course site themes: use the Brightspace default theme, which is contrast-checked.",
+      example: "Black or dark gray (#1a1a1a) on white passes easily. Light gray (#999) on white fails.",
+    };
+  }
+
+  // 2.1.1 — Keyboard operability
+  if (criterion === "2.1.1") {
+    return {
+      ...fallback,
+      why: "An interactive element here can be clicked with a mouse but cannot be activated with the keyboard. Students who can't use a mouse — including many screen reader users and students with motor impairments — are locked out.",
+      how: "This is a developer-side issue with custom course site code. If you see this on an exported Word or Google Docs page, ignore it — the export tool inserted custom controls. If it's on a custom course site you maintain, ask your developer to use a real button or link instead of a clickable div.",
+      example: null,
+    };
+  }
+
+  // 2.4.4 — Link text
+  if (criterion === "2.4.4") {
+    if (normalized.includes("vague link text")) {
+      return {
+        ...fallback,
+        why: "A link here uses vague text like \"click here,\" \"read more,\" or \"this link.\" Screen reader users often pull up a list of all links on a page and read them out of context — a bunch of links that all say \"click here\" tells them nothing about where they go.",
+        how: "Rewrite the link text to describe the destination. Select the existing link text in your editor (Word, Google Docs, Brightspace) and retype it.",
+        example: "Replace \"Click here for the syllabus\" with \"Read the Course Syllabus (PDF).\" Replace \"this link\" with the actual destination name.",
+      };
+    }
+    if (normalized.includes("anchor without usable href") || normalized.includes("javascript:")) {
+      return {
+        ...fallback,
+        why: "A link here doesn't actually go anywhere — its destination is empty or is a piece of JavaScript code that may not work for keyboard users.",
+        how: "If this is on a custom course site, ask your developer to either point the link to a real URL or convert it to a button.",
+        example: null,
+      };
+    }
+  }
+
+  // 3.1.1 — Language of page
+  if (criterion === "3.1.1") {
+    return {
+      ...fallback,
+      why: "The document doesn't tell screen readers what language it's in. A reader may pronounce English words with Spanish phonetics or vice versa — confusing and inaccessible.",
+      how: "In Word: File → Options → Language → set the proofing language for the document.\nIn Google Docs: File → Language → English (or whichever applies).\nIn PDF: File → Properties → Advanced → Language.\nMost LMS platforms set this automatically based on the system language; you don't usually need to touch it for Brightspace pages.",
+      example: null,
+    };
+  }
+
+  // 4.1.2 — Name, role, value (forms, buttons, controls)
+  if (criterion === "4.1.2") {
+    if (normalized.includes("button") && normalized.includes("no accessible name")) {
+      return {
+        ...fallback,
+        why: "A button here has no readable label. Screen reader users hear \"button\" with no clue what it does.",
+        how: "If this is on a custom course site or form, find the button and add visible text inside it. If you can't see the button in your editor, this may be a form control inserted by the platform — contact your help desk.",
+        example: "A button labeled \"Submit Quiz\" is clear; an unlabeled button is invisible.",
+      };
+    }
+    if (normalized.includes("target=\"_blank\"")) {
+      return {
+        ...fallback,
+        why: "A link here opens in a new tab without warning. Screen reader users may not realize they've left the original page; some browsers also expose the original page to security risks.",
+        how: "If you control the link in a course site editor, look for a \"Security\" or \"Advanced\" attribute and check \"noopener.\" Or remove the \"open in new tab\" setting and let the link open normally — most modern browsers handle that fine.",
+        example: null,
+      };
+    }
+    if (normalized.includes("label")) {
+      return {
+        ...fallback,
+        why: "A form field here has no label. Students using screen readers hear \"edit text\" with no indication of what to type.",
+        how: "In Google Forms: every question is automatically labeled — make sure the question text is clear.\nIn Qualtrics: each question's text serves as the label — write descriptive question text.\nIn a custom HTML form: ask your web help desk to add label tags around or before each input field.",
+        example: "Label every form field clearly: \"Your full name,\" \"Quiz code,\" etc. — not just empty boxes.",
+      };
+    }
+    return {
+      ...fallback,
+      why: "An interactive control here doesn't expose its name, role, or current value to screen readers. The student knows something is there but can't tell what it is or how to use it.",
+      how: "Most often this comes from a custom course site or third-party plugin. If you see it on an exported Word or Google Docs page, you can ignore it. If it's on a course site you control, ask the developer.",
+      example: null,
+    };
+  }
+
+  return fallback;
+};
+
+// ─── AUTO-FIX ENGINE ──────────────────────────────────────────────────────────
+async function fixHTML(html) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html || "", "text/html");
+  const fixes = [];
+
+  // FIX 1: lang attribute
+  const htmlEl = doc.querySelector("html");
+  if (htmlEl && !htmlEl.getAttribute("lang")) {
+    htmlEl.setAttribute("lang", "en");
+    fixes.push({ criterion: "3.1.1", description: "Added lang='en' to <html> element" });
+  } else if (htmlEl && !hasSafeLang(htmlEl.getAttribute("lang") || "")) {
+    htmlEl.setAttribute("lang", "en");
+    fixes.push({ criterion: "3.1.1", description: "Replaced invalid lang value with 'en'" });
+  }
+
+  // FIX 2: Missing page title
+  const titleEl = doc.querySelector("title");
+  if (!titleEl || !titleEl.textContent.trim()) {
+    if (!titleEl) {
+      const t = doc.createElement("title");
+      t.textContent = "Course Page";
+      (doc.querySelector("head") || doc.documentElement).prepend(t);
+    } else {
+      titleEl.textContent = "Course Page";
+    }
+    fixes.push({ criterion: "2.4.2", description: "Added placeholder <title> — replace with actual course name" });
+  }
+
+  // FIX 3: Skip nav link
+  const body = doc.querySelector("body");
+  const links = Array.from(doc.querySelectorAll("a[href]"));
+  const hasSkip = links.some(a => {
+    const href = a.getAttribute("href") || "";
+    const text = a.textContent.toLowerCase();
+    return href.includes("#") && /skip|jump|main.?content/.test(text);
+  });
+  if (body && !hasSkip) {
+    const skipLink = doc.createElement("a");
+    skipLink.setAttribute("href", "#main-content");
+    skipLink.setAttribute("class", "skip-to-main");
+    skipLink.setAttribute("style", "position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden");
+    skipLink.textContent = "Skip to main content";
+    body.insertBefore(skipLink, body.firstChild);
+
+    // Also add id to main or first section if missing
+    const main = doc.querySelector("main") || doc.querySelector("[role='main']");
+    if (main && !main.getAttribute("id")) {
+      main.setAttribute("id", "main-content");
+    } else if (!main) {
+      // Wrap body content in a main tag
+      const mainEl = doc.createElement("main");
+      mainEl.setAttribute("id", "main-content");
+      mainEl.setAttribute("tabindex", "-1");
+      // Move all non-skip-link children into main
+      const children = Array.from(body.children).filter(c => c !== skipLink);
+      children.forEach(c => mainEl.appendChild(c));
+      body.appendChild(mainEl);
+    }
+    fixes.push({ criterion: "2.4.1", description: "Added visually-hidden skip-to-main-content link before body content" });
+  }
+
+  // FIX 4: Images missing alt text
+  const images = Array.from(doc.querySelectorAll("img"));
+  for (const img of images) {
+    const alt = img.getAttribute("alt");
+    const src = img.getAttribute("src") || "";
+    if (alt === null) {
+      const filename = normalizeFilenameToLabel(src.split("/").pop());
+      const isDecorative = looksDecorativeImage(src);
+      if (isDecorative) {
+        img.setAttribute("alt", "");
+        img.setAttribute("role", "presentation");
+        fixes.push({ criterion: "1.1.1", description: `Set alt='' role='presentation' on decorative image: ${src.split("/").pop().slice(0,40)}` });
+      } else {
+        let generatedAlt = "";
+        if (isUsefulImageLabel(filename)) {
+          generatedAlt = `${filename.charAt(0).toUpperCase() + filename.slice(1)}` || "Course image";
+          img.setAttribute("alt", generatedAlt);
+          img.setAttribute("data-tls-needs-review", "alt-text");
+          fixes.push({ criterion: "1.1.1", description: `Added filename-based alt='${generatedAlt}' — REVIEW THIS (marked with data-tls-needs-review)` });
+        } else {
+          const aiAlt = await fetchVisionAltText(src);
+          generatedAlt = aiAlt || "Descriptive image of course content";
+          img.setAttribute("alt", generatedAlt);
+          if (aiAlt) {
+            img.setAttribute("data-tls-ai-alt", "true");
+            img.setAttribute("data-tls-needs-review", "alt-text");
+            fixes.push({ criterion: "1.1.1", description: `Generated alt text using AI vision service: "${generatedAlt}".` });
+          } else {
+            img.setAttribute("data-tls-needs-review", "alt-text");
+            fixes.push({ criterion: "1.1.1", description: `Added placeholder alt='${generatedAlt}' because filename was not descriptive. Replace with precise text.` });
+          }
+        }
+      }
+    } else if (alt && /\.(jpg|png|svg|gif|webp)/i.test(alt)) {
+      const cleaned = normalizeFilenameToLabel(alt);
+      img.setAttribute("alt", cleaned);
+      fixes.push({ criterion: "1.1.1", description: `Cleaned filename-style alt text: "${alt}" → "${cleaned}"` });
+    }
+  }
+
+  // FIX 5: Video iframes — add title and caption enforcement
+  doc.querySelectorAll("iframe").forEach(iframe => {
+    const src = iframe.getAttribute("src") || "";
+    const title = iframe.getAttribute("title") || "";
+    const isVideo = /youtube|youtu\.be|vimeo|loom/.test(src);
+    if (!title) {
+      if (isVideo) {
+        iframe.setAttribute("title", "Video — add descriptive title here");
+        iframe.setAttribute("data-tls-needs-review", "video-title");
+        fixes.push({ criterion: "1.2.2", description: "Added placeholder title to video iframe — replace with actual description" });
+      } else {
+        iframe.setAttribute("title", "Embedded content — add descriptive title here");
+        iframe.setAttribute("data-tls-needs-review", "iframe-title");
+        fixes.push({ criterion: "4.1.2", description: "Added placeholder title to iframe — replace with actual description" });
+      }
+    }
+    if (isVideo) {
+      if (/youtube/.test(src) && !src.includes("cc_load_policy=1")) {
+        const newSrc = src.includes("?") ? src + "&cc_load_policy=1" : src + "?cc_load_policy=1";
+        iframe.setAttribute("src", newSrc);
+        fixes.push({ criterion: "1.2.2", description: "Added cc_load_policy=1 to YouTube URL to enforce caption display" });
+      }
+    }
+  });
+
+  // FIX 6: Vague link text
+  doc.querySelectorAll("a[href]").forEach(a => {
+    const txt = normalizeLinkText(a.textContent);
+    const aria = (a.getAttribute("aria-label") || "").toLowerCase();
+    if (VAGUE_LINK_TEXT.has(txt) && !aria) {
+      const href = a.getAttribute("href") || "";
+      // Try to guess from href
+      const guessed = href.replace(/^.*\//, "").replace(/[#?].*$/, "").replace(/[-_.]/g, " ").replace(/\.[^.]+$/, "").trim() || "this page";
+      const label = guessed.charAt(0).toUpperCase() + guessed.slice(1);
+      a.setAttribute("aria-label", label);
+      a.setAttribute("data-tls-needs-review", "link-text");
+      fixes.push({ criterion: "2.4.4", description: `Added aria-label='${label}' to vague link "${a.textContent.trim()}" — REVIEW` });
+    }
+  });
+
+  // FIX 6b: External links opened in new tab need rel protection
+  doc.querySelectorAll("a[href]").forEach((a) => {
+    if (externalBlankNeedsRel(a)) {
+      const next = ensureSafeRel(a.getAttribute("rel") || "");
+      a.setAttribute("rel", next);
+      fixes.push({ criterion: "4.1.2", description: `Added rel='noopener noreferrer' to target=\"_blank\" link: ${a.getAttribute("href") || "unknown"}` });
+    }
+  });
+
+  // FIX 7: Buttons without accessible names
+  doc.querySelectorAll("button").forEach((btn, i) => {
+    const txt = btn.textContent.trim();
+    if (!txt && !btn.getAttribute("aria-label") && !btn.getAttribute("aria-labelledby")) {
+      btn.setAttribute("aria-label", "Button — add label here");
+      btn.setAttribute("data-tls-needs-review", "button-label");
+      fixes.push({ criterion: "4.1.2", description: `Added placeholder aria-label to unlabeled button — REVIEW` });
+    }
+    if (!btn.getAttribute("type")) {
+      btn.setAttribute("type", "button");
+      fixes.push({ criterion: "4.1.2", description: "Set missing button type='button' to prevent accidental form submissions." });
+    }
+  });
+
+  // FIX 8: Social icon links
+  const socialMap = SOCIAL_PLATFORM_LABELS;
+  doc.querySelectorAll("a[href]").forEach(a => {
+    const href = (a.getAttribute("href") || "").toLowerCase();
+    const txt = a.textContent.trim();
+    const aria = a.getAttribute("aria-label") || "";
+    if (!txt && !aria) {
+      const platform = Object.keys(socialMap).find(k => href.includes(k));
+      if (platform) {
+        a.setAttribute("aria-label", `${socialMap[platform]} page`);
+        fixes.push({ criterion: "4.1.2", description: `Added aria-label='${socialMap[platform]} page' to social icon link` });
+      }
+    }
+  });
+
+  // FIX 6c: Repair placeholder and empty links
+  doc.querySelectorAll("a").forEach((a) => {
+    const href = (a.getAttribute("href") || "").trim();
+    if (isPlaceholderHref(href)) {
+      a.setAttribute("href", "#top");
+      if (!a.getAttribute("id")) a.setAttribute("id", nextTlsId("link"));
+      fixes.push({ criterion: "2.4.4", description: `Replaced empty href with #top on link: ${a.textContent.trim() || a.getAttribute("id") || "unlabeled link"}` });
+    } else if (href.startsWith("javascript:")) {
+      a.setAttribute("href", "#top");
+      a.setAttribute("data-tls-needs-review", "javascript-link");
+      fixes.push({ criterion: "4.1.2", description: `Replaced javascript: href with #top on link: ${a.textContent.trim() || a.getAttribute("href") || "unlabeled link"}` });
+    }
+  });
+
+  // FIX 9: Form controls without labels
+  doc.querySelectorAll("input, select, textarea").forEach((field, i) => {
+    const tagName = field.tagName.toLowerCase();
+    if (tagName === "input" && field.getAttribute("type") === "hidden") return;
+    if (!hasLabeledField(doc, field)) {
+      const labelText = controlAutoLabel(field);
+      field.setAttribute("aria-label", labelText);
+      fixes.push({ criterion: "4.1.2", description: `Added aria-label='${labelText}' to unlabeled ${tagName}` });
+    }
+  });
+
+  // FIX 10: Duplicate ID collision remediation (flag only)
+  collectDuplicateIds(doc).forEach((id) => {
+    fixes.push({ criterion: "4.1.2", description: `Duplicate id found: '${id}'` });
+  });
+
+  // FIX 11: Force explicit form behavior for deterministic interaction
+  doc.querySelectorAll("form").forEach((form, i) => {
+    if (!form.getAttribute("method")) {
+      form.setAttribute("method", "post");
+      fixes.push({ criterion: "4.1.2", description: `Set default form method='post' for form #${i + 1}` });
+    }
+    if (!form.getAttribute("action")) {
+      form.setAttribute("action", "#");
+      fixes.push({ criterion: "4.1.2", description: `Set fallback form action='#' for form #${i + 1}` });
+    }
+  });
+
+  // FIX 12: Ensure a main landmark exists
+  if (!doc.querySelector("main, [role='main']")) {
+    const bodyEl = doc.querySelector("body");
+    if (bodyEl) {
+      const mainEl = doc.createElement("main");
+      mainEl.setAttribute("id", "main-content");
+      mainEl.setAttribute("tabindex", "-1");
+      while (bodyEl.firstChild) {
+        if (bodyEl.firstChild.classList && bodyEl.firstChild.classList.contains("skip-to-main")) {
+          bodyEl.removeChild(bodyEl.firstChild);
+          continue;
+        }
+        mainEl.appendChild(bodyEl.firstChild);
+      }
+      bodyEl.appendChild(mainEl);
+      fixes.push({ criterion: "2.4.1", description: "Added fallback <main id='main-content'> for pages without a main landmark." });
+    }
+  }
+
+  // FIX 13: heading hierarchy — fix skipped levels
+  const headings = Array.from(doc.querySelectorAll("h1,h2,h3,h4,h5,h6"));
+  for (let i = 1; i < headings.length; i++) {
+    const prev = parseInt(headings[i-1].tagName[1]);
+    const curr = parseInt(headings[i].tagName[1]);
+    if (curr - prev > 1) {
+      const correct = prev + 1;
+      const newH = doc.createElement(`h${correct}`);
+      newH.innerHTML = headings[i].innerHTML;
+      // Copy attributes
+      Array.from(headings[i].attributes).forEach(attr => newH.setAttribute(attr.name, attr.value));
+      headings[i].parentNode.replaceChild(newH, headings[i]);
+      headings[i] = newH;
+      fixes.push({ criterion: "1.3.1", description: `Fixed heading skip: h${curr} → h${correct} ("${newH.textContent.trim().slice(0,40)}")` });
+    }
+  }
+
+  // FIX 14: Media elements accessibility basics
+  doc.querySelectorAll("video, audio").forEach((media) => {
+    const tagName = media.tagName.toLowerCase();
+    const hasSource = media.querySelector("source") || media.getAttribute("src");
+    if (!media.hasAttribute("controls") && hasSource) {
+      media.setAttribute("controls", "");
+      fixes.push({ criterion: "1.2.2", description: `Added controls to <${tagName}> for user control.` });
+    }
+    if (tagName === "video" && hasSource && !hasCaptionsTrack(media)) {
+      media.setAttribute("data-tls-needs-review", "video-captions");
+      fixes.push({ criterion: "1.2.2", description: "Flagged video for caption track review. Ensure captions or transcript are available." });
+    }
+  });
+
+  // FIX 15: Positive tabindex in focusable order (repair risky patterns)
+  doc.querySelectorAll("[tabindex]").forEach((el) => {
+    const raw = (el.getAttribute("tabindex") || "").trim();
+    const tabindex = parseInt(raw, 10);
+    if (!Number.isNaN(tabindex) && tabindex > 0) {
+      el.setAttribute("tabindex", "0");
+      fixes.push({ criterion: "2.4.3", description: `Replaced tabindex='${raw}' with '0' on ${el.tagName.toLowerCase()}.` });
+    }
+  });
+
+  // FIX 16: Keyboard accessibility for clickable custom controls
+  Array.from(doc.querySelectorAll("*")).forEach((el) => {
+    if (hasStyleDisplayNone(el)) return;
+    const tag = el.tagName.toLowerCase();
+    const issue = keyboardAccessibilityIssue(el);
+    if (!issue) return;
+    const role = (el.getAttribute("role") || "").toLowerCase();
+    if (!role) {
+      el.setAttribute("role", "button");
+      fixes.push({ criterion: "2.1.1", description: `Set role='button' on clickable ${tag} with onclick handler.` });
+    }
+    const rawTabindex = (el.getAttribute("tabindex") || "").trim();
+    const tabindex = parseInt(rawTabindex, 10);
+    if (Number.isNaN(tabindex) || tabindex < 0) {
+      el.setAttribute("tabindex", "0");
+      fixes.push({ criterion: "2.1.1", description: `Set tabindex='0' on ${tag} with clickable behavior to restore keyboard focusability.` });
+    }
+    if (!hasKeyboardEvent(el)) {
+      el.setAttribute("data-tls-needs-review", "keyboard-handler");
+      fixes.push({ criterion: "2.1.1", description: `Marked ${tag} for keyboard activation review (Enter/Space).` });
+    }
+  });
+
+  // FIX 17: Flag potential low contrast issues for inline-styled text (manual review)
+  Array.from(doc.querySelectorAll("body *")).forEach((el) => {
+    if (["script", "style", "noscript", "template", "svg", "canvas", "path"].includes(el.tagName.toLowerCase())) return;
+    if (el.getAttribute("aria-hidden") === "true") return;
+    if (hasStyleDisplayNone(el)) return;
+    if (!hasOwnVisibleText(el)) return;
+    const fg = getInlineTextColor(el);
+    const bg = getInlineBgColor(el);
+    if (!fg || !bg) return;
+    const ratio = contrastRatio(fg, bg);
+    if (!ratio) return;
+    const required = isLargeText(el) ? 3 : 4.5;
+    if (ratio < required) {
+      el.setAttribute("data-tls-needs-review", "low-contrast");
+      fixes.push({
+        criterion: "1.4.3",
+        description: `Flagged potential low-contrast text on <${el.tagName.toLowerCase()}> (contrast ${ratio.toFixed(2)}:1, required ${required}:1).`,
+      });
+    }
+  });
+
+  // Serialize back
+  const fixedHTML = "<!DOCTYPE html>\n" + doc.documentElement.outerHTML;
+  return { fixedHTML, fixes };
+}
+
+// ─── AUDIT ENGINE ─────────────────────────────────────────────────────────────
+function auditHTML(html) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html || "", "text/html");
+  const findings = [];
+  let passCount = 0;
+
+  const add = (criterion, level, severity, issue, element, fix, category = null) => {
+    const where = getElementPath(element);
+    const guidance = buildFacultyGuidance(criterion, issue, fix, element);
+    const resolvedCategory = category || getFindingCategory(criterion, level, issue, fix, severity);
+    const resolvedSeverity = normalizeSeverity(level, severity, resolvedCategory);
+    findings.push({
+      criterion,
+      level,
+      severity: resolvedSeverity,
+      issue,
+      element: element ? (element.outerHTML || "").slice(0,120) : null,
+      where,
+      guidance: guidance || {},
+      fix,
+      category: resolvedCategory,
+      source: "static",
+      confidence: "medium",
+      requiresManualReview: false,
+      ruleSetLabel: "Static analysis only.",
+      id: findings.length,
+    });
+  };
+
+  doc.querySelectorAll("img").forEach(img => {
+    const alt = img.getAttribute("alt");
+    const src = img.getAttribute("src") || "";
+    if (alt === null) add("1.1.1","A","critical",`Image missing alt: ${src.split("/").pop().slice(0,50)}`,img,"Add alt='' or descriptive alt text");
+    else if (alt && /\.(jpg|png|svg|gif)/i.test(alt)) add("1.1.1","A","warning",`Alt looks like filename: "${alt.slice(0,40)}"`,img,"Replace with meaningful description");
+    else passCount++;
+  });
+
+  doc.querySelectorAll("iframe").forEach(iframe => {
+    const src = iframe.getAttribute("src") || "";
+    const title = iframe.getAttribute("title") || "";
+    if (/youtube|youtu\.be|vimeo|loom/.test(src)) {
+      if (!title) add("1.2.2","A","critical",`Video iframe missing title: ${src.slice(0,60)}`,iframe,"Add title='description'");
+      else passCount++;
+      if (/youtube/.test(src) && !src.includes("cc_load_policy=1")) add("1.2.2","A","warning","YouTube embed may not enforce captions",iframe,"Add cc_load_policy=1 to URL");
+    } else if (!title) {
+      add("4.1.2", "A", "warning", `Iframe missing title: ${src.slice(0,60)}`, iframe, "Add a descriptive title.");
+    }
+  });
+
+  doc.querySelectorAll("video, audio").forEach(media => {
+    const tagName = media.tagName.toLowerCase();
+    const hasSource = media.querySelector("source") || media.getAttribute("src");
+    if (!media.hasAttribute("controls") && hasSource) {
+      add("1.2.2", "A", "warning", `${tagName.toUpperCase()} is missing controls`, media, "Add controls attribute.");
+    }
+    if (tagName === "video" && hasSource && !hasCaptionsTrack(media)) {
+      add("1.2.2", "A", "warning", "Video may be missing captions/subtitles track", media, "Add captions track or link transcript.");
+    }
+  });
+
+  doc.querySelectorAll("[tabindex]").forEach(el => {
+    const raw = (el.getAttribute("tabindex") || "").trim();
+    const tabindex = parseInt(raw, 10);
+    if (!Number.isNaN(tabindex) && tabindex > 0) {
+      add("2.4.3", "A", "advisory", `Positive tabindex="${raw}" on <${el.tagName.toLowerCase()}>`, el, "Remove positive tabindex and rely on document order.", "quality");
+    }
+  });
+
+  // Keyboard operability: ensure clickable custom controls are keyboard-addressable
+  Array.from(doc.querySelectorAll("*")).forEach((el) => {
+    if (hasStyleDisplayNone(el)) return;
+    const issue = keyboardAccessibilityIssue(el);
+    if (issue) add("2.1.1", "A", "warning", issue, el, "Use semantic controls or add tabindex plus keyboard handlers.");
+  });
+
+  // Inline style contrast checks (1.4.3) for elements with explicit text/background colors
+  Array.from(doc.querySelectorAll("body *")).forEach((el) => {
+    if (["script", "style", "noscript", "template", "svg", "canvas", "path"].includes(el.tagName.toLowerCase())) return;
+    if (el.getAttribute("aria-hidden") === "true") return;
+    if (hasStyleDisplayNone(el)) return;
+    if (!hasOwnVisibleText(el)) return;
+    const fg = getInlineTextColor(el);
+    const bg = getInlineBgColor(el);
+    if (!fg || !bg) return;
+    const ratio = contrastRatio(fg, bg);
+    if (!ratio) return;
+    const required = isLargeText(el) ? 3 : 4.5;
+    if (ratio < required) {
+      add("1.4.3", "AA", "warning", `Low contrast on <${el.tagName.toLowerCase()}>: ${ratio.toFixed(2)}:1 (required ${required}:1)`, el, "Increase text/background contrast per WCAG 1.4.3.");
+    } else {
+      passCount++;
+    }
+  });
+
+  const links = Array.from(doc.querySelectorAll("a"));
+  const hasSkip = links.some(a => {
+    const href = a.getAttribute("href")||""; const text = a.textContent.toLowerCase();
+    return href.includes("#") && /skip|jump|main.?content/.test(text);
+  });
+  if (!hasSkip) add("2.4.1","A","warning","No skip-navigation link found",null,"Add skip-to-main link as first link");
+  else passCount++;
+
+  const title = doc.querySelector("title");
+  if (!title || !title.textContent.trim()) add("2.4.2","A","critical","Page missing <title>",null,"Add descriptive <title>");
+  else passCount++;
+
+  const htmlEl = doc.querySelector("html");
+  if (!htmlEl || !htmlEl.getAttribute("lang")) add("3.1.1","A","critical","<html> missing lang attribute",htmlEl,"Add lang='en'");
+  else if (!hasSafeLang(htmlEl.getAttribute("lang") || "")) add("3.1.1", "A", "warning", `Unrecognized lang value: ${htmlEl.getAttribute("lang")}`, htmlEl, "Use a valid language code (for example en, en-US)");
+  else passCount++;
+
+  const h1s = doc.querySelectorAll("h1");
+  if (h1s.length === 0) add("1.3.1","A","warning","No h1 element found",null,"Add one h1 as main heading");
+  else if (h1s.length > 1) add("1.3.1","A","warning",`${h1s.length} h1 elements — should be one`,null,"Use single h1");
+  else passCount++;
+
+  const hasMain = !!doc.querySelector("main, [role='main']");
+  if (!hasMain) add("1.3.1","A","warning","No main landmark found",null,"Add <main> or role='main' landmark");
+  else passCount++;
+
+  const headings = Array.from(doc.querySelectorAll("h1,h2,h3,h4,h5,h6"));
+  const levels = headings.map(h => parseInt(h.tagName[1]));
+  for (let i = 1; i < levels.length; i++) {
+    if (levels[i] - levels[i-1] > 1) {
+      add("1.3.1","A","warning",`Heading skip: h${levels[i-1]}→h${levels[i]}: "${headings[i].textContent.trim().slice(0,35)}"`,headings[i],`Change to h${levels[i-1]+1}`);
+    }
+  }
+
+  links.forEach(a => {
+    const href = (a.getAttribute("href") || "").trim();
+    const txt = normalizeLinkText(a.textContent);
+    const aria = (a.getAttribute("aria-label")||"").toLowerCase();
+    if (VAGUE_LINK_TEXT.has(txt) && !aria) add("2.4.4","A","warning",`Vague link text: "${a.textContent.trim()}"`,a,"Use descriptive text or aria-label");
+  });
+
+  links.forEach(a => {
+    const href = (a.getAttribute("href") || "").trim();
+    if (isPlaceholderHref(href)) add("2.4.4", "A", "critical", "Anchor without usable href", a, "Add href or replace with button.");
+    if (href.toLowerCase() === "javascript:void(0)" || href.toLowerCase() === "javascript:;" || href.toLowerCase() === "javascript:void(0);")
+      add("4.1.2", "A", "warning", "Anchor uses javascript: link", a, "Use a real href or a button element.");
+    if (externalBlankNeedsRel(a)) add("4.1.2", "A", "advisory", "target=\"_blank\" without rel=\"noopener noreferrer\"", a, "Add rel='noopener noreferrer'.", "quality");
+  });
+
+  doc.querySelectorAll("table").forEach(table => {
+    const hasDataCells = table.querySelectorAll("td").length > 0;
+    const hasHeaders = table.querySelectorAll("th").length > 0;
+    if (hasDataCells && !hasHeaders) {
+      add("1.3.1", "A", "warning", "Data table has no <th> header cells", table, "Add <th> elements for row/column headers.");
+    }
+  });
+
+  doc.querySelectorAll("button").forEach(btn => {
+    const txt = btn.textContent.trim();
+    const label = (btn.getAttribute("aria-label") || "").trim();
+    const labelledBy = (btn.getAttribute("aria-labelledby") || "").trim();
+    const title = (btn.getAttribute("title") || "").trim();
+    if (!isTruthyText(txt) && !isTruthyText(label) && !isTruthyText(labelledBy) && !isTruthyText(title))
+      add("4.1.2","A","critical","Button has no accessible name",btn,"Add text or aria-label");
+    else passCount++;
+    const type = (btn.getAttribute("type") || "submit").toLowerCase();
+    if (type === "submit" && !btn.form) add("4.1.2", "A", "advisory", "Submit button is not inside a form", btn, "Set type='button' unless it submits a form.", "quality");
+  });
+
+  const socialKw = ["facebook","twitter","instagram","linkedin","youtube","tiktok"];
+  links.forEach(a => {
+    const href = (a.getAttribute("href")||"").toLowerCase();
+    const txt = a.textContent.trim();
+    const aria = a.getAttribute("aria-label")||"";
+    if (socialKw.some(s=>href.includes(s))) {
+      if (!txt && !aria) add("4.1.2","A","warning",`Social icon link missing accessible name: ${href.slice(0,60)}`,a,"Add aria-label='Platform name'");
+      else passCount++;
+    }
+  });
+
+  doc.querySelectorAll("input, select, textarea").forEach((field) => {
+    const tagName = field.tagName.toLowerCase();
+    if (tagName === "input" && field.getAttribute("type")==="hidden") return;
+    if (!hasLabeledField(doc, field)) {
+      const sev = tagName === "input" && !field.getAttribute("placeholder") ? "critical" : "warning";
+      add("4.1.2","A",sev,`${tagName.toUpperCase()} has no label`,field,"Add <label> or aria-label");
+    } else passCount++;
+  });
+
+  collectDuplicateIds(doc).forEach((id) => {
+    add("4.1.2", "A", "advisory", `Duplicate id found: '${id}'`, null, "Make IDs unique.", "quality");
+  });
+
+  const total = findings.length + passCount;
+  const score = total > 0 ? Math.round((passCount / total) * 100) : 100;
+  return { findings, passCount, score };
+}
+
+// ─── SAMPLE ───────────────────────────────────────────────────────────────────
+const SAMPLE = `<!DOCTYPE html>
+<html>
+<head><title>ENG 307: Writing Fiction</title></head>
+<body>
+<img src="course-hero.jpg">
+<img src="umaine-logo.svg">
+<nav>
+  <a href="assignments.html">Assignments</a>
+  <a href="https://instagram.com/umaine"></a>
+</nav>
+<h1>Writing Fiction</h1>
+<h3>Week 3: George Saunders on Revision</h3>
+<iframe src="https://www.youtube.com/embed/abc123xyz"></iframe>
+<p><a href="syllabus.pdf">Click here</a> to download the syllabus.</p>
+<button></button>
+<input type="text" placeholder="Search readings...">
+</body>
+</html>`;
+
+const WCAG_CRITERIA_SET = new Set(["1.1.1","1.2.2","1.3.1","2.1.1","2.4.1","2.4.2","2.4.3","2.4.4","1.4.3","3.1.1","4.1.2"]);
+
+const escapeHtml = (value = "") => (
+  String(value)
+    .replace(/&/gu, "&amp;")
+    .replace(/</gu, "&lt;")
+    .replace(/>/gu, "&gt;")
+    .replace(/"/gu, "&quot;")
+    .replace(/'/gu, "&#39;")
+);
+
+const SEV = {
+  critical: { dot: "●", colorClass: "text-red-900", borderClass: "border-l-red-900", chipClass: "bg-red-900 text-white", tagClass: "bg-red-50 text-red-900 border-red-200", label: "CRITICAL" },
+  warning:  { dot: "●", colorClass: "text-yellow-800", borderClass: "border-l-yellow-800", chipClass: "bg-yellow-800 text-white", tagClass: "bg-yellow-50 text-yellow-800 border-yellow-200", label: "WARNING" },
+  advisory: { dot: "●", colorClass: "text-green-800", borderClass: "border-l-green-800", chipClass: "bg-green-900 text-white", tagClass: "bg-green-50 text-green-800 border-green-200", label: "ADVISORY" },
+  pass:     { dot: "✓", colorClass: "text-green-800", borderClass: "border-l-green-800", chipClass: "bg-green-900 text-white", tagClass: "bg-green-50 text-green-800 border-green-200", label: "PASS" },
+  info:     { dot: "●", colorClass: "text-slate-700", borderClass: "border-l-blue-900", chipClass: "bg-blue-900 text-white", tagClass: "bg-blue-50 text-slate-700 border-slate-200", label: "INFO" },
+};
+const RESULT_TABS = ["audit", "fixed", "html", "contrast"];
+
+const AUDIT_MODE_STATIC = "static";
+const AUDIT_MODE_FULL = "full";
+const MANUAL_REVIEW_CHECKLIST = [
+  { criterion: "1.1.1", description: "Verify alternative text quality and context for meaningful images." },
+  { criterion: "1.3.3", description: "Ensure information is not conveyed by color, shape, or position alone." },
+  { criterion: "1.4.1", description: "Confirm color is not the only means of conveying information." },
+  { criterion: "2.4.6", description: "Review heading clarity and purpose for navigability." },
+  { criterion: "3.1.2", description: "Check language of parts where the dominant language changes." },
+  { criterion: "3.3.1", description: "Review form validation messages and error instructions for clarity." },
+  { criterion: "4.1.3", description: "Verify status and live region behavior with assistive technologies." },
+];
+
+const getManualReviewChecklist = () => MANUAL_REVIEW_CHECKLIST;
+
+const STATIC_ONLY_NOT_TESTED = [
+  "color-contrast (requires browser rendering)",
+  "focus-visible (requires browser rendering)",
+  "keyboard navigation traps (requires browser rendering)",
+  "computed style interactions",
+];
+
+const LIMITATION_DISCLAIMER = "Automated analysis identifies only a subset of WCAG 2.1 AA barriers. This is not a full conformance certification.";
+
+const isValidAuditUrl = (value = "") => {
+  try {
+    const parsed = new URL(value);
+    return ["http:", "https:"].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
+};
+
+const mapRenderedSeverity = (value = "warning") => {
+  const lower = String(value || "").toLowerCase();
+  if (lower === "critical" || lower === "error" || lower === "serious") return "critical";
+  if (lower === "warning" || lower === "moderate") return "warning";
+  return "advisory";
+};
+
+const buildLimitationDisclosure = (mode = AUDIT_MODE_STATIC, ruleSetsNotTested = []) => {
+  const list = (ruleSetsNotTested.length ? ruleSetsNotTested : mode === AUDIT_MODE_STATIC ? STATIC_ONLY_NOT_TESTED : []).map((item) => `  - ${item}`).join("\n");
+  const modeLabel = mode === AUDIT_MODE_FULL ? "FULL (static + rendered, phase 1 limited rule set)." : "STATIC ONLY.";
+  return `${LIMITATION_DISCLAIMER}\n\nAudit mode: ${modeLabel}${list ? `\n\nNot tested:\n${list}` : ""}`;
+};
+
+const deduplicateFindings = (findings = []) => {
+  const seen = new Set();
+  return findings.filter((finding) => {
+    const selector = (finding.where || finding.element || "").slice(0, 120);
+    const snippet = (finding.issue || finding.fix || "").slice(0, 120);
+    const key = `${finding.source || "static"}|${finding.criterion || "N/A"}|${selector}|${snippet}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const normalizeRenderedFindings = (findings = []) => {
+  return findings.map((finding, index) => {
+    const firstNode = Array.isArray(finding.nodes) ? finding.nodes[0] : null;
+    const where = typeof firstNode?.selector === "string" ? firstNode.selector : "";
+    const snippet = typeof firstNode?.snippet === "string" ? firstNode.snippet.slice(0, 120) : "";
+    const severity = mapRenderedSeverity(finding.severity);
+    return {
+      criterion: finding.criterion || finding.id || "N/A",
+      level: "AA",
+      severity,
+      issue: finding.description || finding.help || "Automated rendered check detected a potential issue.",
+      element: snippet,
+      where,
+      guidance: {
+        why: finding.description || "",
+        how: finding.fixInstruction || finding.help || "Review the finding and apply the recommended fix.",
+      },
+      fix: finding.fixInstruction || finding.help || "Review and apply a fix.",
+      category: getFindingCategory(finding.criterion || "", "AA", finding.description || "", finding.fixInstruction || finding.help || "", severity),
+      source: "rendered",
+      confidence: finding.confidence || (severity === "critical" ? "high" : "medium"),
+      requiresManualReview: Boolean(finding.requiresManualReview),
+      ruleSetLabel: finding.ruleSetLabel || "Phase 1 — limited rule set",
+      id: index,
+      helpUrl: finding.helpUrl || "",
+      help: finding.help || "",
+      wcag: finding.wcag || "",
+    };
+  });
+};
+
+const getFindingCategory = (criterion, _level, issue = "", fix = "", severity = "") => {
+  const severityLower = `${severity || ""}`.toLowerCase();
+  if (severityLower === "advisory") return "quality";
+  const combined = `${criterion || ""} ${issue || ""} ${fix || ""}`.toLowerCase();
+  if (combined.includes("placeholder") || combined.includes("review") || combined.includes("rel=\"noopener noreferrer\"") || combined.includes("security")) return "quality";
+  if (!criterion) return "quality";
+  return WCAG_CRITERIA_SET.has(String(criterion)) ? "wcag" : "quality";
+};
+
+const summarizeFindings = (findings = []) => {
+  const items = findings || [];
+  return {
+    total: items.length,
+    wcag: items.filter((f) => f.category === "wcag").length,
+    quality: items.filter((f) => f.category === "quality").length,
+    critical: items.filter((f) => f.severity === "critical").length,
+    warning: items.filter((f) => f.severity === "warning").length,
+    advisory: items.filter((f) => f.severity === "advisory").length,
+  };
+};
+
+const formatContrastStatus = (value) => (value ? "PASS" : "FAIL");
+const getScoreState = (score) => (!Number.isFinite(score) ? "info" : score >= 80 ? "pass" : score >= 50 ? "warning" : "critical");
+const getScoreColorClass = (score) => {
+  const state = getScoreState(score);
+  return state === "pass" ? "text-green-800" : state === "warning" ? "text-yellow-800" : state === "critical" ? "text-red-900" : "text-slate-500";
+};
+const getScoreBarColorClass = (score) => {
+  const state = getScoreState(score);
+  return state === "pass" ? "bg-green-800" : state === "warning" ? "bg-yellow-800" : "bg-red-900";
+};
+const getScoreBarWidthClass = (score = 0) => {
+  const clamped = Math.max(0, Math.min(100, Math.round(score / 10) * 10));
+  if (clamped >= 100) return "w-full";
+  if (clamped >= 95) return "w-11/12";
+  if (clamped >= 85) return "w-5/6";
+  if (clamped >= 75) return "w-2/3";
+  if (clamped >= 65) return "w-3/5";
+  if (clamped >= 55) return "w-1/2";
+  if (clamped >= 45) return "w-2/5";
+  if (clamped >= 35) return "w-1/3";
+  if (clamped >= 25) return "w-1/4";
+  return clamped >= 15 ? "w-1/6" : "w-0";
+};
+const getContrastClass = (value) => (value ? "text-green-800" : "text-red-900");
+const getSevClasses = (severity) => SEV[severity] || SEV.info;
+const toSeverityText = (value) => (value === "critical" ? "Critical" : value === "warning" ? "Warning" : "Advisory");
+const getShareToolUrl = () => {
+  if (typeof window !== "undefined" && window.location?.href) {
+    const url = new URL(SHARE_TOOL_PATH, window.location.href);
+    url.searchParams.set("ref", "faculty");
+    return url.toString();
+  }
+  return `${SHARE_TOOL_PATH}?ref=faculty`;
+};
+
+// ─── COPY BUTTON ──────────────────────────────────────────────────────────────
+
+
+
+// ─── APP ──────────────────────────────────────────────────────────────────────
+
+
+// ===== Vanilla App glue =====
+(function() {
+  'use strict';
+
+  // Iframe detection — hide chrome when embedded in MkDocs site
+  try { if (window !== window.top) { document.documentElement.classList.add('in-iframe'); } } catch (e) {}
+
+  // Onboarding modal
+  document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('onboarding-modal');
+    const continueBtn = document.getElementById('modal-continue');
+    if (modal && continueBtn) {
+      try { modal.showModal(); } catch (e) { modal.setAttribute('open', ''); }
+      continueBtn.addEventListener('click', function() {
+        try { modal.close(); } catch (e) { modal.removeAttribute('open'); }
+      });
+    }
+
+    // Sample loader
+    const inputArea = document.getElementById('html-input');
+    const loadSampleBtn = document.getElementById('load-sample');
+    if (loadSampleBtn && inputArea) {
+      loadSampleBtn.addEventListener('click', function() { inputArea.value = SAMPLE; });
+    }
+
+    // Tabs
+    const tabButtons = document.querySelectorAll('.tabs button');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const target = btn.dataset.tab;
+        tabButtons.forEach(b => b.setAttribute('aria-selected', b === btn ? 'true' : 'false'));
+        tabPanels.forEach(p => p.classList.toggle('active', p.dataset.tab === target));
+      });
+    });
+
+    // Audit + Fix button
+    const auditBtn = document.getElementById('audit-btn');
+    const statusEl = document.getElementById('status');
+    const findingsEl = document.getElementById('findings-list');
+    const summaryEl = document.getElementById('summary-row');
+    const fixedHtmlEl = document.getElementById('fixed-html');
+    const fixesListEl = document.getElementById('fixes-list');
+    const downloadBtn = document.getElementById('download-report');
+    const filterSel = document.getElementById('severity-filter');
+
+    let lastFindings = null;
+
+    function setStatus(msg, isError) {
+      statusEl.textContent = msg;
+      statusEl.classList.toggle('error', !!isError);
+      statusEl.style.display = msg ? 'block' : 'none';
+    }
+
+    function renderFindings(findings) {
+      findingsEl.innerHTML = '';
+      const filter = filterSel ? filterSel.value : 'all';
+      const filtered = filter === 'all' ? findings : findings.filter(f => f.severity === filter);
+      if (filtered.length === 0) {
+        findingsEl.innerHTML = '<p style="color:var(--muted);font-style:italic">No findings at this severity level.</p>';
+        return;
+      }
+      filtered.forEach((f, idx) => {
+        const item = document.createElement('div');
+        item.className = 'finding';
+        const sev = (f.severity || 'info').toLowerCase();
+        const guide = f.guidance || {};
+        item.innerHTML = '' +
+          '<button class="finding-header" type="button" aria-expanded="false">' +
+            '<span class="label ' + sev + '">' + sev.toUpperCase() + '</span>' +
+            '<span style="flex:1">' +
+              '<span class="title"></span>' +
+              '<div class="criterion">WCAG ' + (f.criterion || '?') + '</div>' +
+            '</span>' +
+            '<span class="toggle">▶</span>' +
+          '</button>' +
+          '<div class="finding-body">' +
+            '<h4>What\'s wrong</h4><p class="why-text"></p>' +
+            '<h4>How to fix it</h4><p class="how-text"></p>' +
+            (guide.example ? '<h4>Example</h4><p class="example-text"></p>' : '') +
+            '<h4>Where</h4><div class="where"></div>' +
+          '</div>';
+        item.querySelector('.title').textContent = f.message || f.issue || '(no description)';
+        item.querySelector('.why-text').textContent = guide.why || 'This may affect users of assistive technology.';
+        item.querySelector('.how-text').textContent = guide.how || 'See the Field Guide for guidance.';
+        if (guide.example) item.querySelector('.example-text').textContent = guide.example;
+        item.querySelector('.where').textContent = guide.where || '(unknown location)';
+        const header = item.querySelector('.finding-header');
+        header.addEventListener('click', function() {
+          const open = item.classList.toggle('open');
+          header.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+        findingsEl.appendChild(item);
+      });
+    }
+
+    function renderSummary(findings) {
+      const counts = { critical: 0, warning: 0, advisory: 0, pass: 0, info: 0 };
+      findings.forEach(f => { counts[f.severity] = (counts[f.severity] || 0) + 1; });
+      summaryEl.innerHTML = '';
+      ['critical', 'warning', 'advisory', 'pass', 'info'].forEach(sev => {
+        if (counts[sev]) {
+          const chip = document.createElement('span');
+          chip.className = 'chip ' + sev;
+          chip.textContent = counts[sev] + ' ' + sev.toUpperCase();
+          summaryEl.appendChild(chip);
+        }
+      });
+    }
+
+    if (auditBtn) {
+      auditBtn.addEventListener('click', async function() {
+        const input = inputArea.value.trim();
+        if (!input) {
+          setStatus('Paste some HTML into the box first.', true);
+          return;
+        }
+        setStatus('Running audit…', false);
+        try {
+          const result = auditHTML(input);
+          const findings = result.findings || [];
+          const passCount = result.passCount || 0;
+          const score = result.score || 0;
+          lastFindings = findings;
+          renderSummary(findings);
+          renderFindings(findings);
+          // Try fixHTML in parallel — non-blocking
+          try {
+            const fixResult = await fixHTML(input);
+            if (fixResult && fixResult.fixedHTML) {
+              fixedHtmlEl.textContent = fixResult.fixedHTML;
+              fixesListEl.innerHTML = '';
+              if (fixResult.fixes && fixResult.fixes.length) {
+                fixResult.fixes.forEach(fix => {
+                  const li = document.createElement('li');
+                  li.innerHTML = '<strong>WCAG ' + fix.criterion + ':</strong> ';
+                  li.appendChild(document.createTextNode(fix.description || ''));
+                  fixesListEl.appendChild(li);
+                });
+              }
+            }
+          } catch (e) {
+            console.warn('fixHTML failed:', e);
+          }
+          setStatus('Audit complete: ' + findings.length + ' findings, ' + passCount + ' passing checks, score ' + score + '%.', false);
+        } catch (err) {
+          console.error(err);
+          setStatus('Audit failed: ' + (err && err.message ? err.message : 'unknown error'), true);
+        }
+      });
+    }
+
+    if (filterSel) {
+      filterSel.addEventListener('change', function() {
+        if (lastFindings) renderFindings(lastFindings);
+      });
+    }
+
+    if (downloadBtn) {
+      downloadBtn.addEventListener('click', function() {
+        if (!lastFindings) {
+          setStatus('Run an audit first before downloading a report.', true);
+          return;
+        }
+        const date = new Date();
+        const dateStr = date.toISOString().slice(0, 10);
+        const html = '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>WCAG Audit Report — ' + dateStr + '</title><style>body{font-family:system-ui,Arial,sans-serif;max-width:800px;margin:2rem auto;padding:0 1rem;line-height:1.5}h1,h2{color:#1f4e79}.f{border:1px solid #ddd;padding:0.7rem;margin:0.5rem 0;border-radius:4px}.sev{display:inline-block;padding:0.15rem 0.4rem;font-size:0.8rem;font-weight:bold;color:white;border-radius:3px}.critical{background:#7b1e1e}.warning{background:#7a6000}.advisory{background:#1e6b3c}.pass{background:#1e6b3c}.info{background:#0c4a6e}</style></head><body>' +
+          '<h1>WCAG Audit Report</h1>' +
+          '<p>Generated ' + date.toLocaleString() + '</p>' +
+          '<h2>Findings (' + lastFindings.length + ')</h2>' +
+          lastFindings.map(f => {
+            const g = f.guidance || {};
+            return '<div class="f"><div><span class="sev ' + (f.severity || 'info') + '">' + (f.severity || 'info').toUpperCase() + '</span> <strong>WCAG ' + (f.criterion || '?') + '</strong></div>' +
+              '<p><strong>' + (f.message || f.issue || '') + '</strong></p>' +
+              '<p><em>What\'s wrong:</em> ' + (g.why || '') + '</p>' +
+              '<p><em>How to fix it:</em> ' + (g.how || '').replace(/\n/g, '<br>') + '</p>' +
+              (g.example ? '<p><em>Example:</em> ' + g.example + '</p>' : '') +
+              '<p style="font-size:0.85em;color:#666"><em>Where:</em> ' + (g.where || '') + '</p></div>';
+          }).join('') +
+          '<p style="margin-top:2rem;color:#666;font-size:0.9em">Faculty WCAG Audit Report — Prepared by Morgan Talty, Department of English, University of Maine.</p></body></html>';
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'wcag-audit-report-' + dateStr + '.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setStatus('Report downloaded.', false);
+      });
+    }
+  });
+})();
+
+</script>
+</body>
 </html>
