@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Start Here — Faculty Accessibility Toolkit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .skip-link { position: absolute; left: -9999px; top: -9999px; }
+      .skip-link:focus { left: 1rem; top: 1rem; z-index: 50; outline: 3px solid #1f4e79; background: #ffffff; padding: 0.5rem 0.75rem; }
+    </style>
+  </head>
+  <body class="bg-white text-slate-800">
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <main id="main-content" class="min-h-screen bg-[linear-gradient(180deg,#f8fbff_0%,#eef4fb_45%,#ffffff_100%)] p-6 sm:p-10">
+      <div class="mx-auto max-w-3xl">
+        <header class="mb-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_18px_50px_-28px_rgba(15,23,42,0.35)]">
+          <div class="p-6 sm:p-8">
+            <div class="mb-4 inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold tracking-wide text-blue-900">Faculty accessibility toolkit · April 24, 2026 deadline</div>
+            <h1 class="text-3xl font-bold text-blue-950 sm:text-5xl sm:leading-tight">A faculty toolkit for Title&nbsp;II accessibility</h1>
+            <p class="mt-4 max-w-2xl text-base leading-7 text-slate-700">Four pieces, all free. Click any card to open it. UMaine's Title II page tells you what the rule requires and the campus baseline tools. This toolkit is what you reach for next: a checker for your own course pages, a field guide that answers "what do I do first," and a routing guide for when the question isn't really about your content.</p>
+            <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-600">Start at UMaine's official guidance. Then use these.&nbsp;<a class="font-semibold text-blue-800 underline-offset-2 hover:underline" href="https://www.maine.edu/equal-opportunity/title-ii-regulations/" target="_blank" rel="noopener noreferrer">UMaine Title II page</a>.</p>
+            <div class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <a class="rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-blue-300 hover:bg-blue-50 transition-colors block no-underline" href="Faculty_Field_Guide_2026-04-30.html">
+                <div class="text-xs font-semibold tracking-wide text-slate-500">1 · Open</div>
+                <div class="mt-1 text-sm font-semibold text-slate-900">Field Guide</div>
+                <div class="mt-1 text-sm text-slate-600">Plain-language walkthrough — Word, PowerPoint, Google Docs, PDFs, video. Every technical term has a hover definition. Start here if you have time to read.</div>
+              </a>
+              <a class="rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-blue-300 hover:bg-blue-50 transition-colors block no-underline" href="Faculty_WCAG_Checker_2026-04-30.html">
+                <div class="text-xs font-semibold tracking-wide text-slate-500">2 · Open</div>
+                <div class="mt-1 text-sm font-semibold text-slate-900">Checker</div>
+                <div class="mt-1 text-sm text-slate-600">For technical users: paste an HTML version of a course page and get an automated audit. If "HTML" is unfamiliar, start with the Field Guide instead.</div>
+              </a>
+              <a class="rounded-xl border border-slate-200 bg-slate-50 p-4 hover:border-blue-300 hover:bg-blue-50 transition-colors block no-underline" href="Faculty_WCAG_Routing_Guide_2026-04-30.html">
+                <div class="text-xs font-semibold tracking-wide text-slate-500">3 · Open</div>
+                <div class="mt-1 text-sm font-semibold text-slate-900">Routing Guide</div>
+                <div class="mt-1 text-sm text-slate-600">When the question isn't about how to fix your file — points you to the right office, vendor, or policy.</div>
+              </a>
+              <a class="rounded-xl border border-amber-300 bg-amber-50 p-4 hover:border-amber-500 hover:bg-amber-100 transition-colors block no-underline" href="Faculty_Examples_2026-04-30.html">
+                <div class="text-xs font-semibold tracking-wide text-amber-700">4 · See</div>
+                <div class="mt-1 text-sm font-semibold text-slate-900">Working Examples</div>
+                <div class="mt-1 text-sm text-slate-700">Side-by-side before/after demos: course pages, equations (MathML), forms. See what good looks like and copy the source.</div>
+              </a>
+            </div>
+          </div>
+        </header>
+
+        <section aria-labelledby="how-it-works" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_14px_40px_-28px_rgba(15,23,42,0.28)]">
+          <h2 id="how-it-works" class="text-xl font-bold text-blue-900">What the checker does</h2>
+          <ul class="mt-4 space-y-3 text-slate-700" role="list">
+            <li class="rounded-xl border border-slate-100 bg-slate-50 p-4">Paste your course page HTML and get an immediate accessibility audit.</li>
+            <li class="rounded-xl border border-slate-100 bg-slate-50 p-4">See the gap between campus guidance and the page in front of you: what's broken, what can be fixed fast, what still needs human review.</li>
+            <li class="rounded-xl border border-slate-100 bg-slate-50 p-4">Download a timestamped audit report you can keep on file while you remediate the highest-use materials first.</li>
+          </ul>
+        </section>
+
+        <section class="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_14px_40px_-28px_rgba(15,23,42,0.28)]">
+          <h2 class="text-xl font-bold text-blue-900">When the checker isn't the right answer</h2>
+          <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+              <div class="font-semibold text-slate-900">Need the mandate or deadline?</div>
+              <div class="mt-1">Use UMaine's official Title II page and the UMS accessibility policy.</div>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+              <div class="font-semibold text-slate-900">Need Brightspace, Kaltura, Google, or Zoom workflow help?</div>
+              <div class="mt-1">CITL plus the vendor's own docs for exact platform behavior.</div>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+              <div class="font-semibold text-slate-900">Need an accommodation or exemption answer?</div>
+              <div class="mt-1">Student Accessibility Services or the ADA Coordinator — not a generic checklist.</div>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+              <div class="font-semibold text-slate-900">Need to know whose problem it is?</div>
+              <div class="mt-1">Use the routing guide to sort faculty, IT, vendor, labor, and remediation questions.</div>
+            </div>
+          </div>
+          <a class="mt-5 inline-flex items-center rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-900 hover:border-blue-300 hover:bg-blue-100" href="Faculty_WCAG_Routing_Guide_2026-04-30.html">
+            Open the routing guide →
+          </a>
+        </section>
+
+        <section class="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_14px_40px_-28px_rgba(15,23,42,0.28)]">
+          <h2 id="start-here" class="text-lg font-bold text-blue-900">Get started</h2>
+          <p class="mt-2 text-slate-700">Open the checker in your browser and start auditing course pages right away. No login, no account.</p>
+          <p class="mt-2 text-sm leading-6 text-slate-600">If optional AI alt-text support is configured, image URLs may be sent to that endpoint for suggested descriptions. Otherwise nothing leaves your browser.</p>
+          <a
+            href="Faculty_WCAG_Checker_2026-04-30.html"
+            class="mt-5 inline-flex w-full items-center justify-center rounded-xl border-2 border-blue-900 bg-blue-900 px-5 py-3 text-lg font-semibold text-white shadow-[0_12px_24px_-14px_rgba(30,64,175,0.6)] transition hover:-translate-y-0.5 hover:bg-blue-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-900 sm:w-auto"
+          >
+            Open the Checker →
+          </a>
+          <div class="mt-5 grid gap-3 sm:grid-cols-2">
+            <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+              <div class="font-semibold">What this is</div>
+              <div class="mt-1 text-amber-900">A faculty-facing checker for fast audits and clearer next steps after UMaine's baseline guidance.</div>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+              <div class="font-semibold text-slate-900">What this is not</div>
+              <div class="mt-1">Not a compliance certification. Not a substitute for manual review.</div>
+            </div>
+          </div>
+        </section>
+
+        <footer class="mt-10 rounded-2xl border border-slate-200 bg-white px-6 py-6 text-sm text-slate-600 shadow-[0_14px_40px_-28px_rgba(15,23,42,0.22)]">
+          <p>
+            Prepared by Morgan Talty, Department of English, University of Maine. Not an official University of Maine product. Free to colleagues at no cost.
+          </p>
+        </footer>
+      </div>
+    </main>
+  </body>
+</html>
