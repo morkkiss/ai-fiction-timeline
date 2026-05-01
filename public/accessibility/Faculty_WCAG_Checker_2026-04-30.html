@@ -11,7 +11,21 @@
     <style>
       body { min-height: 100vh; }
     </style>
-  </head>
+  <script>
+// Hide redundant nav when this page is rendered inside an iframe (the MkDocs site
+// already provides its own toolkit navigation, so we don't need a second one here).
+if (window !== window.top) {
+  document.documentElement.classList.add('in-iframe');
+  document.addEventListener('DOMContentLoaded', function() {
+    var navStrip = document.querySelector('nav[aria-label="Toolkit navigation"]');
+    if (navStrip) navStrip.style.display = 'none';
+    // Also tighten the page header — the parent already shows the title
+    var header = document.querySelector('body > main > header, body > header');
+    // Don't fully hide the standalone header — just reduce padding so it doesn't dominate
+  });
+}
+</script>
+</head>
   <body class="bg-white text-slate-800">
     <noscript>
       <div style="padding: 20px; font-family: Arial, sans-serif;">
