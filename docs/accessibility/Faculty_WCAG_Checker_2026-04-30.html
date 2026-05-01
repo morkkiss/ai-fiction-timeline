@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Faculty WCAG Checker</title>
+<script src="vendor/mammoth.browser.min.js"></script>
 <style>
 :root {
   --primary: #1f4e79;
@@ -258,6 +259,34 @@ dialog.modal .modal-body { padding: 1.5rem; }
 dialog.modal h2 { margin: 0 0 0.75rem; font-size: 1.1rem; color: var(--primary); }
 dialog.modal p { margin: 0.5rem 0; font-size: 0.9rem; color: var(--text); }
 dialog.modal .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem; }
+.file-drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  text-align: center;
+  background: var(--bg-soft);
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.file-drop-zone:hover, .file-drop-zone:focus { background: white; border-color: var(--primary); outline: none; }
+.file-drop-zone.dragover { background: white; border-color: var(--primary); border-style: solid; }
+.score-badge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  background: white;
+  border: 2px solid var(--border);
+  font-weight: 600;
+  margin-right: 0.6rem;
+}
+.score-badge .score-num { font-size: 1.3rem; }
+.score-badge .score-pct { color: var(--muted); font-size: 0.95rem; }
+.score-badge.high { border-color: var(--pass); color: var(--pass); }
+.score-badge.mid { border-color: var(--warning); color: var(--warning); }
+.score-badge.low { border-color: var(--critical); color: var(--critical); }
 @media (max-width: 700px) {
   main { padding: 1rem; }
   header.topbar { padding: 0.75rem 1rem; }
@@ -296,7 +325,14 @@ dialog.modal .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-
   </details>
 
   <div class="audit-form">
-    <label for="html-input">Paste your course page HTML here:</label>
+    <label for="file-input"><strong>Drop a Word document, HTML file, or plain text file:</strong></label>
+    <div id="file-drop-zone" class="file-drop-zone" tabindex="0" role="button" aria-label="Drop a file or click to choose">
+      <p style="margin:0;color:var(--muted);font-size:0.9rem">Drop a <strong>.docx</strong>, <strong>.html</strong>, or <strong>.txt</strong> file here, or click to choose one.</p>
+      <p id="file-status" style="margin:0.4rem 0 0;font-size:0.85rem;color:var(--primary);min-height:1em"></p>
+      <input type="file" id="file-input" accept=".docx,.html,.htm,.txt" style="display:none">
+    </div>
+    <p style="text-align:center;color:var(--muted);font-size:0.85rem;margin:0.5rem 0">— or —</p>
+    <label for="html-input">Paste HTML directly:</label>
     <textarea id="html-input" aria-describedby="html-input-help" placeholder="<html><body>...</body></html>"></textarea>
     <div id="html-input-help" style="font-size:0.85rem;color:var(--muted);margin-top:0.3rem">
       Or click "Load sample" to see what an audit looks like.
@@ -1913,6 +1949,7 @@ const getShareToolUrl = () => {
           const passCount = result.passCount || 0;
           const score = result.score || 0;
           lastFindings = findings;
+          renderScore(score, findings.length + passCount);
           renderSummary(findings);
           renderFindings(findings);
           // Try fixHTML in parallel — non-blocking
@@ -1945,6 +1982,89 @@ const getShareToolUrl = () => {
       filterSel.addEventListener('change', function() {
         if (lastFindings) renderFindings(lastFindings);
       });
+    }
+
+    // ===== File upload handling =====
+    const fileInput = document.getElementById('file-input');
+    const fileDropZone = document.getElementById('file-drop-zone');
+    const fileStatus = document.getElementById('file-status');
+
+    function handleFile(file) {
+      if (!file) return;
+      fileStatus.textContent = 'Reading ' + file.name + '...';
+      const ext = (file.name.split('.').pop() || '').toLowerCase();
+      const reader = new FileReader();
+
+      if (ext === 'docx') {
+        reader.onload = function(e) {
+          const arrayBuffer = e.target.result;
+          if (typeof mammoth === 'undefined') {
+            fileStatus.textContent = 'Word file support not loaded. Try pasting HTML directly.';
+            return;
+          }
+          mammoth.convertToHtml({ arrayBuffer: arrayBuffer })
+            .then(function(result) {
+              const fakeHTML = '<html lang="en"><head><title>' + file.name + '</title></head><body>' + result.value + '</body></html>';
+              inputArea.value = fakeHTML;
+              fileStatus.textContent = 'Loaded ' + file.name + ' — ' + (result.value.length) + ' chars converted. Click Audit + Fix.';
+            })
+            .catch(function(err) {
+              fileStatus.textContent = 'Error reading Word file: ' + err.message;
+            });
+        };
+        reader.readAsArrayBuffer(file);
+      } else if (ext === 'html' || ext === 'htm' || ext === 'txt') {
+        reader.onload = function(e) {
+          let content = e.target.result;
+          if (ext === 'txt') {
+            // Wrap plain text in basic HTML so the auditor has something to walk
+            content = '<html lang="en"><head><title>' + file.name + '</title></head><body><pre>' +
+              content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') +
+              '</pre></body></html>';
+          }
+          inputArea.value = content;
+          fileStatus.textContent = 'Loaded ' + file.name + '. Click Audit + Fix.';
+        };
+        reader.readAsText(file);
+      } else {
+        fileStatus.textContent = 'Unsupported file type: ' + ext + '. Use .docx, .html, or .txt.';
+      }
+    }
+
+    if (fileInput && fileDropZone) {
+      fileDropZone.addEventListener('click', function() { fileInput.click(); });
+      fileDropZone.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+      });
+      fileInput.addEventListener('change', function(e) {
+        if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
+      });
+      fileDropZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        fileDropZone.classList.add('dragover');
+      });
+      fileDropZone.addEventListener('dragleave', function() {
+        fileDropZone.classList.remove('dragover');
+      });
+      fileDropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        fileDropZone.classList.remove('dragover');
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+      });
+    }
+
+    // ===== Score badge =====
+    function renderScore(score, total) {
+      let scoreEl = document.getElementById('score-badge');
+      if (!scoreEl) {
+        scoreEl = document.createElement('span');
+        scoreEl.id = 'score-badge';
+        scoreEl.className = 'score-badge';
+        const summaryRow = document.getElementById('summary-row');
+        summaryRow.parentNode.insertBefore(scoreEl, summaryRow);
+      }
+      scoreEl.className = 'score-badge ' + (score >= 80 ? 'high' : score >= 60 ? 'mid' : 'low');
+      scoreEl.innerHTML = '<span class="score-num">' + score + '</span><span class="score-pct">% accessible (' + total + ' checks)</span>';
     }
 
     if (downloadBtn) {
