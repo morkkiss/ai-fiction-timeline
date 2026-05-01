@@ -1556,7 +1556,7 @@ function OnboardingModal({ onAgree, onDecline }) {
 }
 
 // ─── APP ──────────────────────────────────────────────────────────────────────
-export default function App() {
+function App() {
   const [input, setInput] = useState("");
   const [tab, setTab] = useState("audit"); // audit | fixed | html | contrast
   const [result, setResult] = useState(null);
