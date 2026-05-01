@@ -6,19 +6,15 @@
     <title>Faculty WCAG Routing Guide</title>
     <script src="https://cdn.tailwindcss.com"></script>
   <script>
-// Hide redundant nav when this page is rendered inside an iframe (the MkDocs site
-// already provides its own toolkit navigation, so we don't need a second one here).
-if (window !== window.top) {
-  document.documentElement.classList.add('in-iframe');
-  document.addEventListener('DOMContentLoaded', function() {
-    var navStrip = document.querySelector('nav[aria-label="Toolkit navigation"]');
-    if (navStrip) navStrip.style.display = 'none';
-    // Also tighten the page header — the parent already shows the title
-    var header = document.querySelector('body > main > header, body > header');
-    // Don't fully hide the standalone header — just reduce padding so it doesn't dominate
-  });
-}
+(function() {
+  try {
+    if (window !== window.top) {
+      document.documentElement.classList.add('in-iframe');
+    }
+  } catch (e) {}
+})();
 </script>
+<style>.in-iframe nav[aria-label="Toolkit navigation"] { display: none !important; }</style>
 </head>
   <body class="bg-slate-50 text-slate-800">
     <main class="min-h-screen bg-[linear-gradient(180deg,#f8fbff_0%,#eef4fb_45%,#f8fafc_100%)] p-6 sm:p-10">
