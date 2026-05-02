@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Faculty WCAG Checker</title>
 <script src="vendor/mammoth.browser.min.js"></script>
+<script src="vendor/jszip.min.js"></script>
+<script src="vendor/pdf.min.js"></script>
+<script>
+  // Configure pdf.js worker before any usage. Same-origin worker, no CDN.
+  if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdf.worker.min.js';
+  }
+</script>
 <style>
 :root {
   --primary: #1f4e79;
@@ -325,11 +333,11 @@ dialog.modal .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-
   </details>
 
   <div class="audit-form">
-    <label for="file-input"><strong>Drop a Word document, HTML file, or plain text file:</strong></label>
+    <label for="file-input"><strong>Drop a Word, PowerPoint, PDF, HTML, or plain text file:</strong></label>
     <div id="file-drop-zone" class="file-drop-zone" tabindex="0" role="button" aria-label="Drop a file or click to choose">
-      <p style="margin:0;color:var(--muted);font-size:0.9rem">Drop a <strong>.docx</strong>, <strong>.html</strong>, or <strong>.txt</strong> file here, or click to choose one.</p>
+      <p style="margin:0;color:var(--muted);font-size:0.9rem">Drop a <strong>.docx</strong>, <strong>.pptx</strong>, <strong>.pdf</strong>, <strong>.html</strong>, or <strong>.txt</strong> file here, or click to choose one. Everything stays in your browser — nothing uploads.</p>
       <p id="file-status" style="margin:0.4rem 0 0;font-size:0.85rem;color:var(--primary);min-height:1em"></p>
-      <input type="file" id="file-input" accept=".docx,.html,.htm,.txt" style="display:none">
+      <input type="file" id="file-input" accept=".docx,.pptx,.pdf,.html,.htm,.txt" style="display:none">
     </div>
     <p style="text-align:center;color:var(--muted);font-size:0.85rem;margin:0.5rem 0">— or —</p>
     <label for="html-input">Paste HTML directly:</label>
@@ -2013,6 +2021,159 @@ const getShareToolUrl = () => {
             });
         };
         reader.readAsArrayBuffer(file);
+      } else if (ext === 'pptx') {
+        if (typeof JSZip === 'undefined') {
+          fileStatus.textContent = 'PowerPoint support not loaded. Try saving as HTML and pasting instead.';
+          return;
+        }
+        reader.onload = function(e) {
+          JSZip.loadAsync(e.target.result).then(function(zip) {
+            // Collect slide XML files in numeric order: ppt/slides/slide1.xml, slide2.xml, ...
+            const slideEntries = [];
+            zip.forEach(function(path, entry) {
+              if (/^ppt\/slides\/slide\d+\.xml$/.test(path)) slideEntries.push({ path: path, entry: entry });
+            });
+            slideEntries.sort(function(a, b) {
+              const na = parseInt(a.path.match(/slide(\d+)\.xml/)[1], 10);
+              const nb = parseInt(b.path.match(/slide(\d+)\.xml/)[1], 10);
+              return na - nb;
+            });
+            if (slideEntries.length === 0) {
+              fileStatus.textContent = 'No slides found in this PowerPoint file.';
+              return;
+            }
+            Promise.all(slideEntries.map(function(s) { return s.entry.async('string'); }))
+              .then(function(xmlStrings) {
+                const parser = new DOMParser();
+                let body = '';
+                let imgCount = 0, imgsWithAlt = 0;
+                xmlStrings.forEach(function(xml, idx) {
+                  const slideNum = idx + 1;
+                  body += '<section aria-label="Slide ' + slideNum + '">';
+                  body += '<h2>Slide ' + slideNum + '</h2>';
+                  let doc;
+                  try { doc = parser.parseFromString(xml, 'application/xml'); }
+                  catch (err) { body += '<p>(slide could not be parsed)</p></section>'; return; }
+                  // Pull text runs (<a:t>...</a:t>)
+                  const textNodes = doc.getElementsByTagNameNS('http://schemas.openxmlformats.org/drawingml/2006/main', 't');
+                  // Group runs by their containing paragraph (<a:p>) so we get sentences, not letter soup
+                  const paragraphs = doc.getElementsByTagNameNS('http://schemas.openxmlformats.org/drawingml/2006/main', 'p');
+                  if (paragraphs.length > 0) {
+                    for (let i = 0; i < paragraphs.length; i++) {
+                      const runs = paragraphs[i].getElementsByTagNameNS('http://schemas.openxmlformats.org/drawingml/2006/main', 't');
+                      let line = '';
+                      for (let j = 0; j < runs.length; j++) line += runs[j].textContent;
+                      line = line.trim();
+                      if (line) {
+                        // Heuristic: first paragraph on a slide is often the title — already covered by <h2>Slide N</h2>,
+                        // so emit as <h3> only if it's clearly short and the slide otherwise has text.
+                        body += '<p>' + line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>';
+                      }
+                    }
+                  } else {
+                    // Fallback: dump all text runs in document order
+                    for (let i = 0; i < textNodes.length; i++) {
+                      const t = textNodes[i].textContent.trim();
+                      if (t) body += '<p>' + t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>';
+                    }
+                  }
+                  // Pull images and their alt text. Pictures live as <p:pic> with <p:nvPicPr><p:cNvPr name="..." descr="..."/>
+                  // The 'descr' attribute is the alt text. Missing or empty descr = inaccessible image.
+                  const pics = doc.getElementsByTagNameNS('http://schemas.openxmlformats.org/presentationml/2006/main', 'pic');
+                  for (let i = 0; i < pics.length; i++) {
+                    imgCount++;
+                    const cNvPr = pics[i].getElementsByTagNameNS('http://schemas.openxmlformats.org/presentationml/2006/main', 'cNvPr')[0];
+                    const descr = cNvPr ? (cNvPr.getAttribute('descr') || '').trim() : '';
+                    // PowerPoint pre-fills `descr` with the image filename when faculty insert an image.
+                    // Filename-shaped descr is functionally no alt text — a screen reader user hears "_pixel.png".
+                    // Treat filename patterns as missing so the auditor flags them correctly.
+                    const looksLikeFilename = /^[\w\-. ]+\.(jpg|jpeg|png|gif|svg|webp|bmp|tiff?|heic)$/i.test(descr);
+                    const altText = looksLikeFilename ? '' : descr;
+                    if (altText) {
+                      imgsWithAlt++;
+                      body += '<img src="pptx-image-' + slideNum + '-' + i + '" alt="' + altText.replace(/"/g, '&quot;') + '">';
+                    } else {
+                      // No real alt — emit a bare <img> with no alt attribute so the auditor flags it.
+                      // This is the right call for filename-shaped descr too (very common faculty trap).
+                      body += '<img src="pptx-image-' + slideNum + '-' + i + '">';
+                    }
+                  }
+                  body += '</section>';
+                });
+                // Wrap in a minimal HTML document so the auditor has structure.
+                // No <title> element on purpose — the auditor will flag missing-title, which is correct
+                // for any .pptx unless the user has explicitly set the file's "Title" property in PowerPoint.
+                const fakeHTML = '<html lang="en"><head></head><body><h1>' + (file.name || 'PowerPoint deck').replace(/</g, '&lt;') + '</h1>' + body + '</body></html>';
+                inputArea.value = fakeHTML;
+                fileStatus.textContent = 'Loaded ' + file.name + ' — ' + slideEntries.length + ' slides, ' + imgCount + ' images (' + imgsWithAlt + ' with alt text). Click Audit + Fix.';
+              })
+              .catch(function(err) {
+                fileStatus.textContent = 'Error reading slides: ' + (err.message || err);
+              });
+          }).catch(function(err) {
+            fileStatus.textContent = 'Could not open PowerPoint file: ' + (err.message || err);
+          });
+        };
+        reader.readAsArrayBuffer(file);
+      } else if (ext === 'pdf') {
+        if (typeof pdfjsLib === 'undefined') {
+          fileStatus.textContent = 'PDF support not loaded. Save the PDF as HTML and paste instead.';
+          return;
+        }
+        reader.onload = function(e) {
+          const typedarray = new Uint8Array(e.target.result);
+          pdfjsLib.getDocument({ data: typedarray }).promise.then(function(pdf) {
+            const pageCount = pdf.numPages;
+            const pagePromises = [];
+            for (let i = 1; i <= pageCount; i++) {
+              pagePromises.push(pdf.getPage(i).then(function(page) {
+                return page.getTextContent().then(function(textContent) {
+                  // Each item has .str (the text) and a transform matrix; group by line via y-coord rounding.
+                  const lines = {};
+                  textContent.items.forEach(function(item) {
+                    const y = item.transform ? Math.round(item.transform[5]) : 0;
+                    if (!lines[y]) lines[y] = '';
+                    lines[y] += item.str;
+                  });
+                  // Sort y descending (PDFs use y-up coords, so larger y = top of page)
+                  const ys = Object.keys(lines).map(Number).sort(function(a, b) { return b - a; });
+                  return { pageNum: page.pageNumber, lines: ys.map(function(y) { return lines[y].trim(); }).filter(Boolean) };
+                });
+              }));
+            }
+            Promise.all(pagePromises).then(function(pages) {
+              let body = '';
+              let totalChars = 0;
+              pages.forEach(function(p) {
+                body += '<section aria-label="Page ' + p.pageNum + '">';
+                body += '<h2>Page ' + p.pageNum + '</h2>';
+                if (p.lines.length === 0) {
+                  body += '<p>(no extractable text — likely a scanned image. Run OCR before using this PDF in courses.)</p>';
+                } else {
+                  p.lines.forEach(function(line) {
+                    totalChars += line.length;
+                    body += '<p>' + line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>';
+                  });
+                }
+                body += '</section>';
+              });
+              const looksScanned = totalChars < (pageCount * 50);
+              if (looksScanned) {
+                // Inject a no-alt image so the auditor flags it as a scan-style PDF (the most common Title II failure)
+                body = '<img src="pdf-page-image">' + body;
+              }
+              const fakeHTML = '<html lang="en"><head></head><body><h1>' + (file.name || 'PDF').replace(/</g, '&lt;') + '</h1>' + body + '</body></html>';
+              inputArea.value = fakeHTML;
+              const note = looksScanned ? ' Looks like a scanned PDF — consider OCR.' : '';
+              fileStatus.textContent = 'Loaded ' + file.name + ' — ' + pageCount + ' pages, ' + totalChars + ' chars extracted.' + note + ' Click Audit + Fix.';
+            }).catch(function(err) {
+              fileStatus.textContent = 'Error extracting PDF text: ' + (err.message || err);
+            });
+          }).catch(function(err) {
+            fileStatus.textContent = 'Could not open PDF: ' + (err.message || err);
+          });
+        };
+        reader.readAsArrayBuffer(file);
       } else if (ext === 'html' || ext === 'htm' || ext === 'txt') {
         reader.onload = function(e) {
           let content = e.target.result;
@@ -2027,7 +2188,7 @@ const getShareToolUrl = () => {
         };
         reader.readAsText(file);
       } else {
-        fileStatus.textContent = 'Unsupported file type: ' + ext + '. Use .docx, .html, or .txt.';
+        fileStatus.textContent = 'Unsupported file type: ' + ext + '. Use .docx, .pptx, .pdf, .html, or .txt.';
       }
     }
 
